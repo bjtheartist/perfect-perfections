@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;700&family=Inter:wght@300;400;500;600&family=Oswald:wght@400;700&family=Caveat:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-playfair: "Playfair Display", serif;
+  --font-dm-sans: "DM Sans", sans-serif;
+  --font-inter: "Inter", sans-serif;
+  --font-oswald: "Oswald", sans-serif;
+  --font-caveat: "Caveat", cursive;
+}
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+}
