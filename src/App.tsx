@@ -135,7 +135,7 @@ const SIGNATURE_DISHES = [
   {
     name: "Shrimp & Grits",
     description: "Creamy, buttery grits topped with seasoned shrimp and crispy bacon crumbles.",
-    image: "https://images.unsplash.com/photo-1633504581786-316c8002b1b0?w=800&h=600&fit=crop"
+    image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&h=600&fit=crop"
   },
   {
     name: "Bacon-Wrapped Stuffed Chicken",
@@ -1597,8 +1597,8 @@ const MockupE = ({ grayscale, showAnnotations, onBook }: { grayscale: string; sh
       <section className="py-40 px-12">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-16">
           {[
-            { title: 'Full Service', img: 'https://images.unsplash.com/photo-1530554764233-e79e16571ee2?w=600&h=800&fit=crop' },
-            { title: 'Drop Off', img: 'https://images.unsplash.com/photo-1529543544282-ea99407407c1?w=600&h=800&fit=crop' },
+            { title: 'Full Service', img: 'https://images.unsplash.com/photo-1555244162-803834f70033?w=600&h=800&fit=crop' },
+            { title: 'Drop Off', img: 'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=600&h=800&fit=crop' },
             { title: 'Custom Menus', img: 'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=600&h=800&fit=crop' }
           ].map((s, i) => (
             <div key={i} className="space-y-8 text-center">
