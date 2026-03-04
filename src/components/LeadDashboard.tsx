@@ -1,33 +1,50 @@
 import React, { useState } from 'react';
+import type { Lead, LeadStatus } from '../lib/api/leads';
 
-export const LeadDashboard = ({ onBack }: { onBack: () => void }) => {
-  const [leads, setLeads] = useState<any[]>([]);
+export const LeadDashboard = ({ onBack, adminToken }: { onBack: () => void; adminToken: string }) => {
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchLeads = async () => {
     try {
-      const res = await fetch('/api/leads');
-      const data = await res.json();
-      setLeads(data);
+      setLoading(true);
+      setError(null);
+      const res = await fetch('/api/leads', {
+        headers: { 'x-admin-token': adminToken }
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setLeads([]);
+        setError(data?.error || 'Unable to load leads');
+        return;
+      }
+      setLeads(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+      setError('Unable to load leads');
     } finally {
       setLoading(false);
     }
   };
 
-  const updateStatus = async (id: number, status: string) => {
-    await fetch(`/api/leads/${id}`, {
+  const updateStatus = async (id: number, status: LeadStatus) => {
+    const res = await fetch(`/api/leads/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken },
       body: JSON.stringify({ status })
     });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setError(data?.error || 'Unable to update lead');
+      return;
+    }
     fetchLeads();
   };
 
   React.useEffect(() => {
     fetchLeads();
-  }, []);
+  }, [adminToken]);
 
   return (
     <div className="min-h-screen bg-zinc-50 p-8 font-dm-sans">
@@ -47,6 +64,10 @@ export const LeadDashboard = ({ onBack }: { onBack: () => void }) => {
 
         {loading ? (
           <div className="text-center py-20">Loading leads...</div>
+        ) : error ? (
+          <div className="bg-white p-10 text-center rounded-3xl border border-red-200 text-red-500">
+            {error}
+          </div>
         ) : leads.length === 0 ? (
           <div className="bg-white p-20 text-center rounded-3xl border border-zinc-200">
             <p className="text-zinc-400">No leads captured yet.</p>

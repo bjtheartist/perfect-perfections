@@ -12,7 +12,7 @@ import type {
   BookingResponse,
   PaymentRequest,
   PaymentResult,
-  MenuItem,
+  CatalogData,
   Quote,
 } from './types';
 
@@ -56,7 +56,7 @@ export function useSquare() {
 
   /** Fetch menu items from Square Catalog */
   const getMenu = useCallback(() => {
-    return withLoading(() => apiFetch<MenuItem[]>('/square/menu'));
+    return withLoading(() => apiFetch<CatalogData>('/square/menu'));
   }, [withLoading]);
 
   /** Get a quote breakdown for a booking */

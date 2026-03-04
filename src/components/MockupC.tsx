@@ -60,7 +60,7 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
             <button onClick={onBook} className="bg-black text-white px-10 py-4 rounded-full font-medium hover:bg-zinc-800 transition-all shadow-lg">
               Book Your Event
             </button>
-            <button onClick={downloadMenu} className="border-2 border-zinc-200 px-10 py-4 rounded-full font-medium hover:bg-zinc-50 transition-all flex items-center space-x-2">
+            <button onClick={() => downloadMenu(catalog)} className="border-2 border-zinc-200 px-10 py-4 rounded-full font-medium hover:bg-zinc-50 transition-all flex items-center space-x-2">
               <Download className="w-4 h-4" /><span>Download Menu</span>
             </button>
           </div>

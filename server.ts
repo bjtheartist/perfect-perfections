@@ -6,6 +6,8 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import { LEAD_STATUSES } from "./src/lib/api/leads.js";
+import { requireAdmin } from "./src/lib/server/admin.js";
 
 dotenv.config();
 
@@ -30,7 +32,7 @@ db.exec(`
   )
 `);
 
-const VALID_LEAD_STATUSES = ["new", "contacted", "booked", "closed"];
+const VALID_LEAD_STATUSES = LEAD_STATUSES;
 
 async function startServer() {
   const app = express();
@@ -93,7 +95,7 @@ async function startServer() {
     }
   });
 
-  app.get("/api/leads", (req, res) => {
+  app.get("/api/leads", requireAdmin, (req, res) => {
     try {
       const leads = db.prepare("SELECT * FROM leads ORDER BY created_at DESC").all();
       res.json(leads);
@@ -103,7 +105,7 @@ async function startServer() {
     }
   });
 
-  app.patch("/api/leads/:id", (req, res) => {
+  app.patch("/api/leads/:id", requireAdmin, (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
