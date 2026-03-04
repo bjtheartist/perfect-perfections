@@ -43,6 +43,9 @@ export const BookingModal = ({
 }) => {
   const square = useSquare();
   const squareEnabled = isSquareConfigured() && isLive;
+  const activeQuote = flow.squareQuote ?? flow.fallbackQuote;
+  const totalAmount = activeQuote ? activeQuote.totalCents / 100 : flow.total;
+  const depositAmount = activeQuote ? activeQuote.depositCents / 100 : flow.deposit;
 
   if (!flow.isOpen) return null;
 
@@ -234,7 +237,7 @@ export const BookingModal = ({
                   </button>
                 );
               })}
-              <button onClick={downloadMenu} className="w-full flex items-center justify-center space-x-2 py-4 text-sm text-zinc-500 hover:text-black transition-colors">
+              <button onClick={() => downloadMenu(catalog)} className="w-full flex items-center justify-center space-x-2 py-4 text-sm text-zinc-500 hover:text-black transition-colors">
                 <Download className="w-4 h-4" />
                 <span>Download Full Menu (PDF)</span>
               </button>
@@ -370,60 +373,31 @@ export const BookingModal = ({
           )}
 
           {/* Step 3: Quote */}
-          {flow.step === 'quote' && flow.pkg && (
+          {flow.step === 'quote' && activeQuote && (
             <div className="space-y-8">
-              {/* Use Square quote if available, otherwise fallback to local calc */}
-              {flow.squareQuote ? (
-                <div className="bg-zinc-50 rounded-2xl p-6 space-y-4">
-                  {flow.squareQuote.lineItems.map((item, i) => (
-                    <div key={i} className={`flex justify-between text-sm ${i === 0 ? 'pb-4 border-b border-zinc-200' : ''}`}>
-                      <div>
-                        <p className={i === 0 ? 'font-bold' : 'text-zinc-600'}>{item.name}</p>
-                        {i === 0 && <p className="text-sm text-zinc-500">${(item.unitPriceCents / 100).toFixed(2)}/person × {item.quantity} guests</p>}
-                      </div>
-                      <span className={i === 0 ? 'text-xl font-bold' : 'font-medium'}>${(item.totalCents / 100).toLocaleString()}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between text-sm text-zinc-500 pt-2 border-t border-zinc-100">
-                    <span>Subtotal</span>
-                    <span>${(flow.squareQuote.subtotalCents / 100).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-zinc-500">
-                    <span>Tax (10.25%)</span>
-                    <span>${(flow.squareQuote.taxCents / 100).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between pt-4 border-t border-zinc-200 text-lg font-bold">
-                    <span>Total</span>
-                    <span>${(flow.squareQuote.totalCents / 100).toLocaleString()}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-zinc-50 rounded-2xl p-6 space-y-4">
-                  <div className="flex justify-between items-center pb-4 border-b border-zinc-200">
+              <div className="bg-zinc-50 rounded-2xl p-6 space-y-4">
+                {activeQuote.lineItems.map((item, i) => (
+                  <div key={i} className={`flex justify-between text-sm ${i === 0 ? 'pb-4 border-b border-zinc-200' : ''}`}>
                     <div>
-                      <p className="font-bold">{flow.pkg.name}</p>
-                      <p className="text-sm text-zinc-500">${(flow.pkg.pricePerPersonCents / 100).toFixed(0)}/person × {flow.guests} guests</p>
+                      <p className={i === 0 ? 'font-bold' : 'text-zinc-600'}>{item.name}</p>
+                      {i === 0 && <p className="text-sm text-zinc-500">${(item.unitPriceCents / 100).toFixed(2)}/person × {item.quantity} guests</p>}
                     </div>
-                    <span className="text-xl font-bold">${((flow.pkg.pricePerPersonCents / 100) * flow.guests).toLocaleString()}</span>
+                    <span className={i === 0 ? 'text-xl font-bold' : 'font-medium'}>${(item.totalCents / 100).toLocaleString()}</span>
                   </div>
-                  {flow.addons.map(id => {
-                    const addon = catalog.addons.find(a => a.id === id);
-                    if (!addon) return null;
-                    const unitPrice = addon.priceCents / 100;
-                    const cost = addon.pricingType === 'per-person' ? unitPrice * flow.guests : unitPrice;
-                    return (
-                      <div key={id} className="flex justify-between text-sm">
-                        <span className="text-zinc-600">{addon.name}{addon.pricingType === 'per-person' ? ` ($${unitPrice} × ${flow.guests})` : ''}</span>
-                        <span className="font-medium">${cost}</span>
-                      </div>
-                    );
-                  })}
-                  <div className="flex justify-between pt-4 border-t border-zinc-200 text-lg font-bold">
-                    <span>Total</span>
-                    <span>${flow.total.toLocaleString()}</span>
-                  </div>
+                ))}
+                <div className="flex justify-between text-sm text-zinc-500 pt-2 border-t border-zinc-100">
+                  <span>Subtotal</span>
+                  <span>${(activeQuote.subtotalCents / 100).toLocaleString()}</span>
                 </div>
-              )}
+                <div className="flex justify-between text-sm text-zinc-500">
+                  <span>Tax (10.25%)</span>
+                  <span>${(activeQuote.taxCents / 100).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between pt-4 border-t border-zinc-200 text-lg font-bold">
+                  <span>Total</span>
+                  <span>${(activeQuote.totalCents / 100).toLocaleString()}</span>
+                </div>
+              </div>
 
               <div className="bg-emerald-50 rounded-2xl p-6 flex items-center justify-between">
                 <div>
@@ -431,7 +405,7 @@ export const BookingModal = ({
                   <p className="text-xs text-emerald-600">25% of total — remainder due 7 days before event</p>
                 </div>
                 <span className="text-2xl font-bold text-emerald-800">
-                  ${flow.squareQuote ? (flow.squareQuote.depositCents / 100).toLocaleString() : flow.deposit.toLocaleString()}
+                  ${depositAmount.toLocaleString()}
                 </span>
               </div>
 
@@ -446,7 +420,7 @@ export const BookingModal = ({
                 </div>
                 <div className="flex items-center space-x-2 text-zinc-600">
                   <Utensils className="w-4 h-4" />
-                  <span>{flow.guests} guests · {flow.pkg.name}</span>
+                  <span>{flow.guests} guests · {flow.pkg?.name || activeQuote.lineItems[0]?.name || 'Catering'}</span>
                 </div>
                 {flow.notes && (
                   <div className="flex items-start space-x-2 text-zinc-600">
@@ -457,7 +431,7 @@ export const BookingModal = ({
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <button onClick={downloadMenu} className="flex items-center justify-center space-x-2 py-4 border-2 border-zinc-200 rounded-xl font-bold text-sm hover:bg-zinc-50 transition-colors">
+                 <button onClick={() => downloadMenu(catalog)} className="flex items-center justify-center space-x-2 py-4 border-2 border-zinc-200 rounded-xl font-bold text-sm hover:bg-zinc-50 transition-colors">
                   <Download className="w-4 h-4" />
                   <span>Download Quote</span>
                 </button>
@@ -481,7 +455,7 @@ export const BookingModal = ({
             <div className="space-y-8">
               <div className="text-center space-y-2">
                 <p className="text-4xl font-bold">
-                  ${flow.squareQuote ? (flow.squareQuote.depositCents / 100).toLocaleString() : flow.deposit.toLocaleString()}
+                  ${depositAmount.toLocaleString()}
                 </p>
                 <p className="text-sm text-zinc-500">25% deposit to secure {flow.eventDate}</p>
               </div>
@@ -551,7 +525,7 @@ export const BookingModal = ({
                     onClick={handleCompleteDeposit}
                     className="w-full bg-black text-white py-5 rounded-xl font-bold text-lg uppercase tracking-widest hover:bg-zinc-800 transition-colors"
                   >
-                    Complete Deposit · ${flow.deposit.toLocaleString()}
+                    Complete Deposit · ${depositAmount.toLocaleString()}
                   </button>
                 </div>
               )}
@@ -574,7 +548,7 @@ export const BookingModal = ({
                 <p className="text-zinc-500">
                   {flow.squareOrderId
                     ? <>Invoice sent to <strong>{flow.customerEmail}</strong>. Nikida will confirm within 24 hours.</>
-                    : <>Deposit of ${flow.deposit.toLocaleString()} received. Nikida will reach out within 24 hours to finalize your menu.</>
+                    : <>Deposit of ${depositAmount.toLocaleString()} received. Nikida will reach out within 24 hours to finalize your menu.</>
                   }
                 </p>
               </div>
@@ -591,11 +565,11 @@ export const BookingModal = ({
                 <div className="flex justify-between"><span className="text-zinc-500">Package</span><span className="font-medium">{flow.pkg?.name}</span></div>
                 <div className="flex justify-between border-t border-zinc-200 pt-3">
                   <span className="text-zinc-500">Total</span>
-                  <span className="font-bold">${flow.squareQuote ? (flow.squareQuote.totalCents / 100).toLocaleString() : flow.total.toLocaleString()}</span>
+                  <span className="font-bold">${totalAmount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Deposit Due</span>
-                  <span className="font-bold text-emerald-600">${flow.squareQuote ? (flow.squareQuote.depositCents / 100).toLocaleString() : flow.deposit.toLocaleString()}</span>
+                  <span className="font-bold text-emerald-600">${depositAmount.toLocaleString()}</span>
                 </div>
               </div>
 

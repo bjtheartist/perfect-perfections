@@ -12,6 +12,7 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { squareClient } from './client.js';
+import { requireAdmin } from '../server/admin.js';
 import type {
   BookingRequest,
   BookingResponse,
@@ -25,6 +26,7 @@ import type {
   CatalogDish,
   IconName,
 } from './types.js';
+import { buildQuoteFromCatalog } from '../quote.js';
 import {
   CATERING_PACKAGES,
   MENU_ADDONS,
@@ -63,7 +65,7 @@ router.get('/square/health', async (_req: Request, res: Response) => {
 });
 
 // ── Seed Catalog ────────────────────────────────────────────
-router.post('/square/seed', async (_req: Request, res: Response) => {
+router.post('/square/seed', requireAdmin, async (_req: Request, res: Response) => {
   try {
     // Build batch upsert objects (custom attribute definitions + categories + items)
     const objects: any[] = [];
@@ -311,7 +313,7 @@ router.get('/square/menu', async (_req: Request, res: Response) => {
 });
 
 // ── Clear Cache (dev) ───────────────────────────────────────
-router.post('/square/cache/clear', (_req: Request, res: Response) => {
+router.post('/square/cache/clear', requireAdmin, (_req: Request, res: Response) => {
   catalogCache = null;
   res.json({ success: true, data: { cleared: true } });
 });
@@ -577,47 +579,7 @@ router.post('/square/quote', async (req: Request, res: Response) => {
 
   try {
     const catalog = await fetchCatalog();
-    const pkg = catalog.packages.find(p => p.id === booking.packageId) || catalog.packages[0];
-    const priceCents = pkg?.pricePerPersonCents ?? 0;
-
-    const lineItemsForQuote: { name: string; quantity: number; unitPriceCents: number; totalCents: number }[] = [];
-
-    // Package line item
-    lineItemsForQuote.push({
-      name: `${pkg?.name || 'Catering'} (${booking.guestCount} guests)`,
-      quantity: booking.guestCount,
-      unitPriceCents: priceCents,
-      totalCents: priceCents * booking.guestCount,
-    });
-
-    // Add-on line items
-    for (const addonId of booking.addonIds) {
-      const addon = catalog.addons.find(a => a.id === addonId);
-      if (!addon) continue;
-      const qty = addon.pricingType === 'per-person' ? booking.guestCount : 1;
-      lineItemsForQuote.push({
-        name: addon.name,
-        quantity: qty,
-        unitPriceCents: addon.priceCents,
-        totalCents: addon.priceCents * qty,
-      });
-    }
-
-    const subtotalCents = lineItemsForQuote.reduce((sum, item) => sum + item.totalCents, 0);
-    const taxCents = Math.ceil(subtotalCents * 0.1025); // Chicago tax rate
-    const totalCents = subtotalCents + taxCents;
-    const depositCents = Math.ceil(totalCents * 0.25);
-
-    const quote: Quote = {
-      lineItems: lineItemsForQuote,
-      subtotalCents,
-      taxCents,
-      totalCents,
-      depositCents,
-      depositDueDate: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
-      balanceDueDate: booking.eventDate,
-    };
-
+    const quote = buildQuoteFromCatalog(booking, catalog);
     res.json({ success: true, data: quote } as ApiResponse<Quote>);
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

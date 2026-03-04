@@ -15,6 +15,10 @@ View your app in AI Studio: https://ai.studio/apps/0510704f-c796-4761-ac50-29997
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Copy `.env.example` to `.env` and set your Square credentials and `ADMIN_SECRET`
 3. Run the app:
    `npm run dev`
+
+## Admin Dashboard
+
+Visit `/?admin=true` to view leads. If `ADMIN_SECRET` is set, enter the token when prompted (or pass `?token=YOUR_SECRET`).

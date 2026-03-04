@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { BookingRequest, Quote as SquareQuote, CatalogData } from '../lib/square/types';
-import { DEPOSIT_RATE } from '../data/constants';
+import { buildQuoteFromCatalog } from '../lib/quote';
 
 export type BookingStep = 'package' | 'details' | 'quote' | 'deposit' | 'confirmed';
 
@@ -31,21 +31,6 @@ export const useBookingFlow = (catalog: CatalogData) => {
 
   const pkg = catalog.packages.find(p => p.id === selectedPackage);
 
-  const total = (() => {
-    let t = pkg ? (pkg.pricePerPersonCents / 100) * guests : 0;
-    addons.forEach(id => {
-      const a = catalog.addons.find(x => x.id === id);
-      if (a) t += a.pricingType === 'per-person' ? (a.priceCents / 100) * guests : a.priceCents / 100;
-    });
-    return t;
-  })();
-
-  const deposit = Math.round(total * DEPOSIT_RATE);
-
-  const open = () => { setIsOpen(true); setStep('package'); setSquareError(null); };
-  const close = () => setIsOpen(false);
-  const toggleAddon = (id: string) => setAddons(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-
   const buildBookingRequest = (): BookingRequest => ({
     customerName,
     customerEmail,
@@ -59,10 +44,18 @@ export const useBookingFlow = (catalog: CatalogData) => {
     notes,
   });
 
+  const fallbackQuote = buildQuoteFromCatalog(buildBookingRequest(), catalog);
+  const total = fallbackQuote.totalCents / 100;
+  const deposit = fallbackQuote.depositCents / 100;
+
+  const open = () => { setIsOpen(true); setStep('package'); setSquareError(null); };
+  const close = () => setIsOpen(false);
+  const toggleAddon = (id: string) => setAddons(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
   return {
     isOpen, step, selectedPackage, guests, eventType, eventDate, eventTime, addons, notes, pkg, total, deposit,
     customerName, customerEmail, customerPhone,
-    squareQuote, squareOrderId, squareInvoiceId, squareInvoiceUrl, squareReceiptUrl, squareLoading, squareError,
+    squareQuote, fallbackQuote, squareOrderId, squareInvoiceId, squareInvoiceUrl, squareReceiptUrl, squareLoading, squareError,
     setStep, setSelectedPackage, setGuests, setEventType, setEventDate, setEventTime, setNotes, toggleAddon,
     setCustomerName, setCustomerEmail, setCustomerPhone,
     setSquareQuote, setSquareOrderId, setSquareInvoiceId, setSquareInvoiceUrl, setSquareReceiptUrl, setSquareLoading, setSquareError,
