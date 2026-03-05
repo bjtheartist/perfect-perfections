@@ -237,7 +237,7 @@ export const BookingModal = ({
                   </button>
                 );
               })}
-              <button onClick={() => downloadMenu(catalog)} className="w-full flex items-center justify-center space-x-2 py-4 text-sm text-zinc-500 hover:text-black transition-colors">
+              <button onClick={() => downloadMenu()} className="w-full flex items-center justify-center space-x-2 py-4 text-sm text-zinc-500 hover:text-black transition-colors">
                 <Download className="w-4 h-4" />
                 <span>Download Full Menu (PDF)</span>
               </button>
@@ -431,7 +431,7 @@ export const BookingModal = ({
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                 <button onClick={() => downloadMenu(catalog)} className="flex items-center justify-center space-x-2 py-4 border-2 border-zinc-200 rounded-xl font-bold text-sm hover:bg-zinc-50 transition-colors">
+                 <button onClick={() => downloadMenu()} className="flex items-center justify-center space-x-2 py-4 border-2 border-zinc-200 rounded-xl font-bold text-sm hover:bg-zinc-50 transition-colors">
                   <Download className="w-4 h-4" />
                   <span>Download Quote</span>
                 </button>

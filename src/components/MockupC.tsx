@@ -121,7 +121,7 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
             <button onClick={onBook} className="bg-white text-black px-10 py-4 rounded-full font-medium hover:bg-zinc-100 transition-all shadow-lg">
               Book Your Event
             </button>
-            <button onClick={() => downloadMenu(catalog)} className="border-2 border-white/60 text-white px-10 py-4 rounded-full font-medium hover:bg-white/10 transition-all flex items-center space-x-2">
+            <button onClick={() => downloadMenu()} className="border-2 border-white/60 text-white px-10 py-4 rounded-full font-medium hover:bg-white/10 transition-all flex items-center space-x-2">
               <Download className="w-4 h-4" /><span>Download Menu</span>
             </button>
           </div>
@@ -186,7 +186,7 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
         <div className="max-w-3xl mx-auto text-center space-y-12">
           <div className="relative inline-block">
             <div className="w-48 h-48 rounded-full overflow-hidden border-8 border-white shadow-xl mx-auto">
-              <img src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=800&h=1000&fit=crop" alt="Nikida" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <img src={`${import.meta.env.BASE_URL}nikida.webp`} alt="Nikida" className="w-full h-full object-cover" />
             </div>
             <div className="absolute -right-4 top-0 font-caveat text-2xl rotate-12 text-zinc-500">
               the heart behind the food
