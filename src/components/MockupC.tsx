@@ -8,8 +8,53 @@ import {
 } from 'lucide-react';
 import type { CatalogData, IconName } from '../lib/square/types';
 import type { ReactElement } from 'react';
+import { motion } from 'motion/react';
 import { useLeadForm } from '../hooks/useLeadForm';
 import { downloadMenu } from '../utils/downloadMenu';
+
+function HandwrittenText({ text, delay = 0 }: { text: string; delay?: number }) {
+  return (
+    <span className="inline-block relative">
+      {/* Hidden text to reserve space */}
+      <span className="invisible">{text}</span>
+      {/* SVG overlay with handwriting animation */}
+      <svg
+        className="absolute inset-0 w-full h-full"
+        viewBox="0 0 600 80"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        <motion.text
+          x="300"
+          y="60"
+          textAnchor="middle"
+          className="font-caveat"
+          fontSize="80"
+          fill="none"
+          stroke="white"
+          strokeWidth="2"
+          initial={{ strokeDasharray: 2000, strokeDashoffset: 2000 }}
+          animate={{ strokeDashoffset: 0 }}
+          transition={{ duration: 2, delay, ease: 'easeInOut' }}
+        >
+          {text}
+        </motion.text>
+        <motion.text
+          x="300"
+          y="60"
+          textAnchor="middle"
+          className="font-caveat"
+          fontSize="80"
+          fill="white"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: delay + 1.8, ease: 'easeIn' }}
+        >
+          {text}
+        </motion.text>
+      </svg>
+    </span>
+  );
+}
 
 const ICON_MAP: Record<IconName, ReactElement> = {
   utensils: <Utensils />,
@@ -47,35 +92,38 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
       </nav>
 
       {/* Hero */}
-      <section className="py-20 px-8 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-[1.5fr_1fr] gap-12 items-center">
-        <div className="space-y-8">
-          <div className="space-y-2">
-            <span className="font-caveat text-2xl text-zinc-500">welcome to</span>
-            <h2 className="text-6xl md:text-8xl font-playfair leading-tight">Perfect Perfections Catering</h2>
-          </div>
-          <p className="text-xl text-zinc-600 leading-relaxed max-w-xl">
-            Soulful, made-from-scratch dishes for your most memorable moments. Serving Chicago with love, flavor, and a whole lot of heart.
+      <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
+        <img
+          src="https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=1920&h=1080&fit=crop"
+          alt="Elegant soul food spread"
+          className="absolute inset-0 w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+        <div className="absolute inset-0 bg-black/40" />
+        <div className="relative z-10 text-center text-white px-4 space-y-6">
+          <h2 className="text-5xl md:text-7xl font-playfair leading-tight">
+            <motion.span
+              className="italic block"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              Soulful food,
+            </motion.span>
+            <span className="block text-6xl md:text-8xl mt-2">
+              <HandwrittenText text="Perfectly Crafted." delay={0.6} />
+            </span>
+          </h2>
+          <p className="text-lg md:text-xl max-w-2xl mx-auto opacity-80 font-light">
+            Chicago's premier soul food catering for events, gatherings, and celebrations
           </p>
-          <div className="flex flex-wrap gap-4">
-            <button onClick={onBook} className="bg-black text-white px-10 py-4 rounded-full font-medium hover:bg-zinc-800 transition-all shadow-lg">
+          <div className="flex flex-wrap justify-center gap-4 pt-4">
+            <button onClick={onBook} className="bg-white text-black px-10 py-4 rounded-full font-medium hover:bg-zinc-100 transition-all shadow-lg">
               Book Your Event
             </button>
-            <button onClick={() => downloadMenu(catalog)} className="border-2 border-zinc-200 px-10 py-4 rounded-full font-medium hover:bg-zinc-50 transition-all flex items-center space-x-2">
+            <button onClick={() => downloadMenu(catalog)} className="border-2 border-white/60 text-white px-10 py-4 rounded-full font-medium hover:bg-white/10 transition-all flex items-center space-x-2">
               <Download className="w-4 h-4" /><span>Download Menu</span>
             </button>
-          </div>
-        </div>
-        <div className="relative">
-          <div className="aspect-square rounded-[40px] overflow-hidden rotate-3 shadow-2xl border-8 border-white">
-            <img
-              src="https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=1000&h=1000&fit=crop"
-              alt="Plated soul food"
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-          <div className="absolute -bottom-6 -left-6 bg-white p-6 rounded-3xl shadow-xl -rotate-6 border border-zinc-100">
-            <Heart className="text-red-400 fill-red-400 w-8 h-8" />
           </div>
         </div>
       </section>
