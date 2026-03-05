@@ -63,6 +63,8 @@ describe('buildQuoteFromCatalog', () => {
     );
 
     expect(quote.lineItems[0]?.quantity).toBe(0);
-    expect(quote.totalCents).toBe(0);
+    const perPersonAddon = quote.lineItems.find(item => item.name === 'Per Person Addon');
+    expect(perPersonAddon?.totalCents).toBe(0);
+    expect(quote.totalCents).toBe(552);
   });
 });

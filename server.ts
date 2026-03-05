@@ -8,6 +8,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { LEAD_STATUSES } from "./src/lib/api/leads.js";
 import { requireAdmin } from "./src/lib/server/admin.js";
+import { parseLeadPayload } from "./src/lib/server/leads.js";
 
 dotenv.config();
 
@@ -55,29 +56,21 @@ async function startServer() {
 
   // API Routes
   app.post("/api/leads", (req, res) => {
-    const { name, email, phone, event_date, event_type, guests, message } = req.body;
-
-    // Validate required fields
-    if (!name || typeof name !== "string" || !name.trim()) {
-      res.status(400).json({ error: "Name is required" });
-      return;
-    }
-    if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      res.status(400).json({ error: "Valid email is required" });
+    const parsed = parseLeadPayload(req.body);
+    if (!parsed.ok) {
+      res.status(400).json({ error: parsed.error });
       return;
     }
 
-    // Sanitize and cap string lengths
-    const sanitize = (val: any, max: number) =>
-      typeof val === "string" ? val.trim().slice(0, max) : "";
-    const sanitizedName = sanitize(name, 200);
-    const sanitizedEmail = sanitize(email, 254);
-    const sanitizedPhone = sanitize(phone, 30);
-    const sanitizedEventDate = sanitize(event_date, 20);
-    const sanitizedEventType = sanitize(event_type, 100);
-    const guestsNum = guests != null && guests !== "" ? Number(guests) : NaN;
-    const sanitizedGuests = !isNaN(guestsNum) ? Math.min(Math.max(0, Math.round(guestsNum)), 10000) : null;
-    const sanitizedMessage = sanitize(message, 2000);
+    const {
+      name,
+      email,
+      phone,
+      event_date,
+      event_type,
+      guests,
+      message,
+    } = parsed.value;
 
     try {
       const stmt = db.prepare(`
@@ -85,8 +78,8 @@ async function startServer() {
         VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
       const result = stmt.run(
-        sanitizedName, sanitizedEmail, sanitizedPhone,
-        sanitizedEventDate, sanitizedEventType, sanitizedGuests, sanitizedMessage
+        name, email, phone,
+        event_date, event_type, guests, message
       );
       res.status(201).json({ id: result.lastInsertRowid });
     } catch (error) {
