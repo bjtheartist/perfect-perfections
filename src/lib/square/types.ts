@@ -126,6 +126,38 @@ export interface CustomerInfo {
   notes?: string;
 }
 
+// ── Admin Summaries ─────────────────────────────────────────
+export interface OrderSummary {
+  id: string;
+  referenceId: string;
+  customerName: string;
+  state: string;
+  totalCents: number;
+  eventType?: string;
+  eventDate?: string;
+  guestCount?: number;
+  createdAt: string;
+}
+
+export interface TransactionSummary {
+  id: string;
+  orderId?: string;
+  amountCents: number;
+  status: string;
+  cardBrand?: string;
+  last4?: string;
+  receiptUrl?: string;
+  createdAt: string;
+}
+
+export interface CustomerSummary {
+  id: string;
+  displayName: string;
+  emailAddress?: string;
+  phoneNumber?: string;
+  createdAt: string;
+}
+
 // ── API Responses ───────────────────────────────────────────
 export interface ApiResponse<T> {
   success: boolean;

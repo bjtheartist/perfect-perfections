@@ -5,7 +5,7 @@ import { useCatalog } from './hooks/useCatalog';
 import { MockupC } from './components/MockupC';
 import { FloatingContact } from './components/FloatingContact';
 import { BookingModal } from './components/BookingModal';
-import { LeadDashboard } from './components/LeadDashboard';
+import { AdminDashboard } from './components/AdminDashboard';
 
 export default function App() {
   const { catalog, isLive } = useCatalog();
@@ -35,7 +35,7 @@ export default function App() {
   }, [isAdmin, adminToken]);
 
   if (isAdmin) {
-    return <LeadDashboard adminToken={adminToken} onBack={() => { window.location.search = ''; }} />;
+    return <AdminDashboard adminToken={adminToken} onBack={() => { window.location.search = ''; }} />;
   }
 
   return (

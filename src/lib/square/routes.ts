@@ -25,6 +25,9 @@ import type {
   CatalogAddon,
   CatalogDish,
   IconName,
+  OrderSummary,
+  TransactionSummary,
+  CustomerSummary,
 } from './types.js';
 import { buildQuoteFromCatalog } from '../quote.js';
 import {
@@ -67,10 +70,7 @@ router.get('/square/health', async (_req: Request, res: Response) => {
 // ── Seed Catalog ────────────────────────────────────────────
 router.post('/square/seed', requireAdmin, async (_req: Request, res: Response) => {
   try {
-    // Build batch upsert objects (custom attribute definitions + categories + items)
-    const objects: any[] = [];
-
-    // 1. Custom attribute definitions (upserted as catalog objects)
+    // 1. Ensure custom attribute definitions exist (one-at-a-time, skip if already created)
     const customAttrs = [
       { key: 'pp_min_guests', name: 'Min Guests', type: 'NUMBER' },
       { key: 'pp_includes', name: 'Includes', type: 'STRING' },
@@ -79,18 +79,30 @@ router.post('/square/seed', requireAdmin, async (_req: Request, res: Response) =
     ];
 
     for (const attr of customAttrs) {
-      objects.push({
-        type: 'CUSTOM_ATTRIBUTE_DEFINITION',
-        id: `#pp-attr-${attr.key}`,
-        customAttributeDefinitionData: {
-          type: attr.type,
-          name: attr.name,
-          key: attr.key,
-          allowedObjectTypes: ['ITEM'],
-          sellerVisibility: 'SELLER_VISIBILITY_READ_WRITE_VALUES',
-        },
-      });
+      try {
+        await squareClient.catalog.batchUpsert({
+          idempotencyKey: randomUUID(),
+          batches: [{
+            objects: [{
+              type: 'CUSTOM_ATTRIBUTE_DEFINITION',
+              id: `#pp-attr-${attr.key}`,
+              customAttributeDefinitionData: {
+                type: attr.type as any,
+                name: attr.name,
+                key: attr.key,
+                allowedObjectTypes: ['ITEM'],
+                sellerVisibility: 'SELLER_VISIBILITY_READ_WRITE_VALUES',
+              },
+            }],
+          }],
+        });
+      } catch {
+        // Already exists — safe to ignore
+      }
     }
+
+    // 2. Build batch upsert objects (categories + items)
+    const objects: any[] = [];
 
     // Categories
     const categories = [
@@ -119,7 +131,7 @@ router.post('/square/seed', requireAdmin, async (_req: Request, res: Response) =
         itemData: {
           name: pkg.name,
           description: pkg.description,
-          categoryId: '#pp-cat-packages',
+          categories: [{ id: '#pp-cat-packages' }],
           variations: [
             {
               type: 'ITEM_VARIATION',
@@ -150,7 +162,7 @@ router.post('/square/seed', requireAdmin, async (_req: Request, res: Response) =
         itemData: {
           name: addon.name,
           description: `${addon.name} add-on`,
-          categoryId: '#pp-cat-addons',
+          categories: [{ id: '#pp-cat-addons' }],
           variations: [
             {
               type: 'ITEM_VARIATION',
@@ -178,7 +190,7 @@ router.post('/square/seed', requireAdmin, async (_req: Request, res: Response) =
         itemData: {
           name: dish.name,
           description: dish.description,
-          categoryId: '#pp-cat-dishes',
+          categories: [{ id: '#pp-cat-dishes' }],
           variations: [
             {
               type: 'ITEM_VARIATION',
@@ -255,7 +267,9 @@ async function fetchCatalog(): Promise<CatalogData> {
     const itemData = obj.itemData;
     if (!itemData) continue;
 
-    const categoryName = categoryMap.get(itemData.categoryId || '') || '';
+    // SDK v43+: categories is an array of { id } objects, not a single categoryId
+    const catId = (itemData as any).categories?.[0]?.id || (itemData as any).categoryId || '';
+    const categoryName = categoryMap.get(catId) || '';
     const variation = itemData.variations?.[0];
     const customAttrs = obj.customAttributeValues || {};
 
@@ -390,6 +404,13 @@ router.post('/square/orders', async (req: Request, res: Response) => {
         customerId,
         referenceId: `PP-${Date.now()}`,
         lineItems,
+        taxes: [
+          {
+            name: 'Chicago Sales Tax',
+            percentage: '10.25',
+            scope: 'ORDER',
+          },
+        ],
         fulfillments: [
           {
             type: 'PICKUP',
@@ -420,7 +441,7 @@ router.post('/square/orders', async (req: Request, res: Response) => {
 
     const order = orderResult.order;
     const totalCents = Number(order?.totalMoney?.amount ?? 0);
-    const depositCents = Math.ceil(totalCents * 0.25);
+    const depositCents = Math.round(totalCents * 0.25);
 
     const response: ApiResponse<BookingResponse> = {
       success: true,
@@ -582,6 +603,114 @@ router.post('/square/quote', async (req: Request, res: Response) => {
     const quote = buildQuoteFromCatalog(booking, catalog);
     res.json({ success: true, data: quote } as ApiResponse<Quote>);
   } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ── Admin: Orders ───────────────────────────────────────────
+router.get('/square/admin/orders', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const result = await squareClient.orders.search({
+      locationIds: [LOCATION_ID],
+      query: {
+        sort: { sortField: 'CREATED_AT', sortOrder: 'DESC' },
+      },
+      limit: 20,
+    });
+
+    const orders = result.orders || [];
+
+    // Batch-resolve customer names
+    const customerIds = [...new Set(orders.map((o: any) => o.customerId).filter(Boolean))] as string[];
+    const customerNameMap = new Map<string, string>();
+    if (customerIds.length) {
+      const results = await Promise.allSettled(
+        customerIds.map(id => squareClient.customers.get({ customerId: id }))
+      );
+      for (let i = 0; i < customerIds.length; i++) {
+        const r = results[i];
+        if (r.status === 'fulfilled') {
+          const c = r.value.customer;
+          if (c) customerNameMap.set(customerIds[i], `${c.givenName || ''} ${c.familyName || ''}`.trim());
+        }
+      }
+    }
+
+    const data: OrderSummary[] = orders.map((o: any) => ({
+      id: o.id,
+      referenceId: o.referenceId || '',
+      customerName:
+        customerNameMap.get(o.customerId) ||
+        o.fulfillments?.[0]?.pickupDetails?.recipient?.displayName ||
+        'Unknown',
+      state: o.state || 'OPEN',
+      totalCents: Number(o.totalMoney?.amount ?? 0),
+      eventType: o.metadata?.eventType,
+      eventDate: o.metadata?.eventDate,
+      guestCount: o.metadata?.guestCount ? Number(o.metadata.guestCount) : undefined,
+      createdAt: o.createdAt || '',
+    }));
+
+    res.json({ success: true, data } as ApiResponse<OrderSummary[]>);
+  } catch (error: any) {
+    console.error('Admin Orders Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ── Admin: Transactions (Payments) ──────────────────────────
+router.get('/square/admin/transactions', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const payments: any[] = [];
+    for await (const p of await squareClient.payments.list({
+      locationId: LOCATION_ID,
+      sortOrder: 'DESC',
+    })) {
+      payments.push(p);
+      if (payments.length >= 20) break;
+    }
+
+    const data: TransactionSummary[] = payments.map((p: any) => ({
+      id: p.id,
+      orderId: p.orderId,
+      amountCents: Number(p.amountMoney?.amount ?? 0),
+      status: p.status || 'UNKNOWN',
+      cardBrand: p.cardDetails?.card?.cardBrand,
+      last4: p.cardDetails?.card?.last4,
+      receiptUrl: p.receiptUrl,
+      createdAt: p.createdAt || '',
+    }));
+
+    res.json({ success: true, data } as ApiResponse<TransactionSummary[]>);
+  } catch (error: any) {
+    console.error('Admin Transactions Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ── Admin: Customers ────────────────────────────────────────
+router.get('/square/admin/customers', requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const customers: any[] = [];
+    for await (const c of await squareClient.customers.list({
+      sortField: 'CREATED_AT',
+      sortOrder: 'DESC',
+    })) {
+      customers.push(c);
+      if (customers.length >= 20) break;
+    }
+
+    const data: CustomerSummary[] = customers.map((c: any) => ({
+      id: c.id,
+      displayName: `${c.givenName || ''} ${c.familyName || ''}`.trim() || 'Unknown',
+      emailAddress: c.emailAddress,
+      phoneNumber: c.phoneNumber,
+      createdAt: c.createdAt || '',
+    }));
+
+    res.json({ success: true, data } as ApiResponse<CustomerSummary[]>);
+  } catch (error: any) {
+    console.error('Admin Customers Error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
