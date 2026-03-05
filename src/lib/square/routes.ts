@@ -664,6 +664,7 @@ router.get('/square/admin/transactions', requireAdmin, async (_req: Request, res
     const payments: any[] = [];
     for await (const p of await squareClient.payments.list({
       locationId: LOCATION_ID,
+      sortField: 'CREATED_AT',
       sortOrder: 'DESC',
     })) {
       payments.push(p);
