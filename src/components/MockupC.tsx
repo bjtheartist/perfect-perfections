@@ -65,14 +65,22 @@ const ICON_MAP: Record<IconName, ReactElement> = {
 export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: CatalogData }) => {
   const { status, submitLead } = useLeadForm();
 
+  const serviceImages = [
+    "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&h=600&fit=crop",
+  ];
+
   // Derive service cards from catalog packages
-  const serviceCards = catalog.packages.map(pkg => ({
+  const serviceCards = catalog.packages.map((pkg, i) => ({
     icon: ICON_MAP[pkg.icon] || <Utensils />,
     title: pkg.name,
     desc: pkg.description,
     price: pkg.pricePerPersonCents > 0
       ? `$${(pkg.pricePerPersonCents / 100).toFixed(0)}`
       : 'Custom pricing',
+    image: serviceImages[i % serviceImages.length],
   }));
 
   return (
@@ -136,15 +144,20 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
         </div>
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {serviceCards.map((card, i) => (
-            <div key={i} className="bg-white p-10 rounded-[40px] shadow-sm border border-zinc-100 hover:shadow-xl transition-all space-y-6 group">
-              <div className="w-16 h-16 bg-zinc-50 rounded-2xl flex items-center justify-center text-zinc-400 group-hover:bg-black group-hover:text-white transition-colors">
-                {card.icon}
+            <div key={i} className="bg-white rounded-[40px] shadow-sm border border-zinc-100 hover:shadow-xl transition-all group overflow-hidden">
+              <div className="h-40 overflow-hidden">
+                <img src={card.image} alt={card.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
               </div>
-              <h3 className="text-2xl font-playfair">{card.title}</h3>
-              <p className="text-zinc-500 leading-relaxed">{card.desc}</p>
-              <div className="pt-4 border-t border-zinc-50 flex justify-between items-center">
-                <span className="text-sm font-medium text-zinc-400">{card.price}</span>
-                <ArrowRight className="w-5 h-5 text-zinc-300 group-hover:text-black transition-colors" />
+              <div className="p-8 space-y-4">
+                <div className="w-12 h-12 bg-zinc-50 rounded-2xl flex items-center justify-center text-zinc-400 group-hover:bg-black group-hover:text-white transition-colors">
+                  {card.icon}
+                </div>
+                <h3 className="text-xl font-playfair">{card.title}</h3>
+                <p className="text-zinc-500 text-sm leading-relaxed">{card.desc}</p>
+                <div className="pt-4 border-t border-zinc-50 flex justify-between items-center">
+                  <span className="text-sm font-medium text-zinc-400">{card.price}</span>
+                  <ArrowRight className="w-5 h-5 text-zinc-300 group-hover:text-black transition-colors" />
+                </div>
               </div>
             </div>
           ))}
