@@ -71,7 +71,7 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
     title: pkg.name,
     desc: pkg.description,
     price: pkg.pricePerPersonCents > 0
-      ? `Starting at $${(pkg.pricePerPersonCents / 100).toFixed(0)}/person`
+      ? `$${(pkg.pricePerPersonCents / 100).toFixed(0)}`
       : 'Custom pricing',
   }));
 
@@ -134,7 +134,7 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
           <span className="text-xs uppercase tracking-[0.3em] font-bold text-zinc-400">what we offer</span>
           <h2 className="font-caveat text-4xl">something for every occasion</h2>
         </div>
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {serviceCards.map((card, i) => (
             <div key={i} className="bg-white p-10 rounded-[40px] shadow-sm border border-zinc-100 hover:shadow-xl transition-all space-y-6 group">
               <div className="w-16 h-16 bg-zinc-50 rounded-2xl flex items-center justify-center text-zinc-400 group-hover:bg-black group-hover:text-white transition-colors">
@@ -185,10 +185,10 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
       <section className="py-32 px-8 bg-[#F0F0F0]">
         <div className="max-w-3xl mx-auto text-center space-y-12">
           <div className="relative inline-block">
-            <div className="w-48 h-48 rounded-full overflow-hidden border-8 border-white shadow-xl mx-auto">
-              <img src={`${import.meta.env.BASE_URL}nikida.webp`} alt="Nikida" className="w-full h-full object-cover" />
+            <div className="w-44 h-44 rounded-full overflow-hidden border-8 border-white shadow-xl mx-auto">
+              <img src={`${import.meta.env.BASE_URL}nikida.webp`} alt="Nikida" className="w-full h-full object-cover object-top" />
             </div>
-            <div className="absolute -right-4 top-0 font-caveat text-2xl rotate-12 text-zinc-500">
+            <div className="absolute -right-4 -top-6 font-caveat text-2xl rotate-12 text-zinc-500">
               the heart behind the food
             </div>
           </div>
