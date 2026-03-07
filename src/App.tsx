@@ -12,15 +12,6 @@ export default function App() {
   const booking = useBookingFlow(catalog);
   const searchParams = new URLSearchParams(window.location.search);
   const [adminToken, setAdminToken] = useState(() => {
-    const tokenFromUrl = searchParams.get('token');
-    if (tokenFromUrl) {
-      sessionStorage.setItem('pp_admin_token', tokenFromUrl);
-      searchParams.delete('token');
-      const nextSearch = searchParams.toString();
-      const nextUrl = nextSearch ? `${window.location.pathname}?${nextSearch}` : window.location.pathname;
-      window.history.replaceState(null, '', nextUrl);
-      return tokenFromUrl;
-    }
     return sessionStorage.getItem('pp_admin_token') || '';
   });
   const isAdmin = searchParams.get('admin') === 'true';

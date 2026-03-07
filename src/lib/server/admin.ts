@@ -3,7 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const secret = process.env.ADMIN_SECRET;
   if (!secret) {
-    next();
+    res.status(503).json({ error: "Admin access is unavailable until ADMIN_SECRET is configured." });
     return;
   }
 
