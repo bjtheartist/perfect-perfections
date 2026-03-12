@@ -1,19 +1,32 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { randomUUID } from 'crypto';
-import { squareClient, LOCATION_ID } from '../_lib/square';
-import { cors } from '../_lib/cors';
-import type { BookingRequest } from '../../src/lib/square/types';
+import { SquareClient, SquareEnvironment } from 'square';
+
+function getClient() {
+  return new SquareClient({
+    token: process.env.SQUARE_ACCESS_TOKEN,
+    environment: process.env.SQUARE_ENVIRONMENT === 'production'
+      ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
+  });
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (cors(req, res)) return;
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const booking: BookingRequest = req.body;
+  const booking = req.body;
+  const locationId = process.env.SQUARE_LOCATION_ID || '';
+
   try {
+    const client = getClient();
+
     // Find or create customer
     let customerId: string | undefined;
     try {
-      const searchResult = await squareClient.customers.search({
+      const searchResult = await client.customers.search({
         query: { filter: { emailAddress: { exact: booking.customerEmail } } },
       });
       customerId = searchResult.customers?.[0]?.id;
@@ -21,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (!customerId) {
       const [givenName, ...rest] = booking.customerName.split(' ');
-      const createResult = await squareClient.customers.create({
+      const createResult = await client.customers.create({
         idempotencyKey: randomUUID(),
         givenName,
         familyName: rest.join(' '),
@@ -33,9 +46,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const lineItems = await buildLineItems(booking);
 
-    const orderResult = await squareClient.orders.create({
+    const orderResult = await client.orders.create({
       order: {
-        locationId: LOCATION_ID,
+        locationId,
         customerId,
         referenceId: `PP-${Date.now()}`,
         lineItems,
@@ -96,9 +109,9 @@ function convertTo24Hr(time: string): string {
   return `${String(hour).padStart(2, '0')}:${m}`;
 }
 
-async function buildLineItems(booking: BookingRequest) {
+async function buildLineItems(booking: any) {
   const allObjects: any[] = [];
-  for await (const obj of await squareClient.catalog.list({ types: 'ITEM,CATEGORY' })) {
+  for await (const obj of await getClient().catalog.list({ types: 'ITEM,CATEGORY' }) as any) {
     allObjects.push(obj);
   }
 
@@ -112,7 +125,7 @@ async function buildLineItems(booking: BookingRequest) {
 
   for (const obj of allObjects) {
     if (obj.type !== 'ITEM') continue;
-    const catId = (obj.itemData as any).categories?.[0]?.id || '';
+    const catId = obj.itemData?.categories?.[0]?.id || '';
     const categoryName = categoryMap.get(catId) || '';
     const variation = obj.itemData?.variations?.[0];
     const customAttrs = obj.customAttributeValues || {};

@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import {
   Heart,
   Utensils,
@@ -5,12 +6,18 @@ import {
   Cake,
   ArrowRight,
   Download,
+  ChefHat,
+  PartyPopper,
+  UtensilsCrossed,
+  ClipboardList,
 } from 'lucide-react';
-import type { CatalogData, IconName } from '../lib/square/types';
+import type { CatalogData, CatalogMenuItem, IconName } from '../lib/square/types';
 import type { ReactElement } from 'react';
 import { motion } from 'motion/react';
 import { useLeadForm } from '../hooks/useLeadForm';
 import { downloadMenu } from '../utils/downloadMenu';
+import { trackEvent } from '../lib/analytics';
+import { FAQ_ITEMS } from '../data/constants';
 
 function HandwrittenText({ text, delay = 0 }: { text: string; delay?: number }) {
   return (
@@ -62,8 +69,152 @@ const ICON_MAP: Record<IconName, ReactElement> = {
   cake: <Cake />,
 };
 
-export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: CatalogData }) => {
+// Deduplicate menu items by name (keep the one with lowest price)
+function dedupeMenuItems(items: CatalogMenuItem[]): CatalogMenuItem[] {
+  const seen = new Map<string, CatalogMenuItem>();
+  for (const item of items) {
+    const key = item.name.toLowerCase().trim();
+    const existing = seen.get(key);
+    if (!existing || item.priceCents < existing.priceCents) {
+      seen.set(key, item);
+    }
+  }
+  return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// Categorize items by type based on name patterns
+function categorizeItems(items: CatalogMenuItem[]) {
+  const categories: Record<string, CatalogMenuItem[]> = {
+    'Entrées': [],
+    'Sides & Salads': [],
+    'Appetizers': [],
+    'Breakfast & Brunch': [],
+    'Desserts': [],
+  };
+
+  const sideKeywords = /salad|mac.*cheese|rice|potato|grits|asparagus|broccoli|corn|cabbage|spinach|green bean|collard|veggie tray|bread|rolls|sweet potato|dirty rice|mostaccioli|veggie pasta/i;
+  const appetizerKeywords = /roll|slider|empanada|taco cup|bites|pinwheel|meatball|charcuterie|bagel tray|mini |hotdog|polish|italian beef|sub |wrap/i;
+  const breakfastKeywords = /breakfast|waffle|french toast|egg|bacon|sausage|hashbrown|scrambled|pastry platter/i;
+  const dessertKeywords = /dessert|cookie|brownie|cobbler|pie|chocolate|dipped|fruit tray/i;
+  const skipKeywords = /deposit|balance|gratuity|delivery|extra plate|individual packaging|liquor|mixer|decoration|beverage|juice|water|assorted snack|assorted chip|meal prep|vegetarian.*gluten|wine bar|full service|dropoff|catering for/i;
+
+  for (const item of items) {
+    if (skipKeywords.test(item.name)) continue;
+    if (breakfastKeywords.test(item.name)) categories['Breakfast & Brunch'].push(item);
+    else if (dessertKeywords.test(item.name)) categories['Desserts'].push(item);
+    else if (appetizerKeywords.test(item.name)) categories['Appetizers'].push(item);
+    else if (sideKeywords.test(item.name)) categories['Sides & Salads'].push(item);
+    else categories['Entrées'].push(item);
+  }
+
+  // Remove empty categories
+  return Object.fromEntries(Object.entries(categories).filter(([, v]) => v.length > 0));
+}
+
+function MenuSection({ menuItems, onBook, onEstimate }: { menuItems: CatalogMenuItem[]; onBook: () => void; onEstimate: () => void }) {
+  const deduped = dedupeMenuItems(menuItems);
+  const categories = categorizeItems(deduped);
+  const categoryNames = Object.keys(categories);
+  const defaultCategory = categoryNames.includes('Entrées') ? 'Entrées' : categoryNames[0] || '';
+  const [activeCategory, setActiveCategory] = useState(defaultCategory);
+
+  // Sync active category when menu data loads async
+  useEffect(() => {
+    if (activeCategory === '' && defaultCategory !== '') {
+      setActiveCategory(defaultCategory);
+    }
+  }, [defaultCategory, activeCategory]);
+
+  if (deduped.length === 0) return null;
+
+  const activeItems = categories[activeCategory] || [];
+
+  return (
+    <section id="menu" className="py-32 px-8 bg-zinc-50">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-16 space-y-4">
+          <span className="text-xs uppercase tracking-[0.3em] font-bold text-zinc-400">from our kitchen</span>
+          <h2 className="font-caveat text-4xl">Our Menu</h2>
+          <p className="text-zinc-500 max-w-xl mx-auto">Fresh dishes made from scratch with layers of rich flavor. Prices shown are per tray for catering — perfect for feeding your guests.</p>
+        </div>
+
+        {/* Category tabs */}
+        <div className="flex flex-wrap justify-center gap-3 mb-12">
+          {categoryNames.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => { setActiveCategory(cat); trackEvent('menu_category_click', { category: cat }); }}
+              className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${
+                activeCategory === cat
+                  ? 'bg-black text-white shadow-lg'
+                  : 'bg-white text-zinc-600 hover:bg-zinc-100 border border-zinc-200'
+              }`}
+            >
+              {cat}
+              <span className="ml-1.5 text-xs opacity-60">({categories[cat].length})</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Menu items */}
+        <div className="bg-white rounded-[40px] shadow-sm border border-zinc-100 p-8 md:p-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+            {activeItems.map((item) => (
+              <div key={item.id} className="flex justify-between items-baseline py-3 border-b border-zinc-50 last:border-0 group">
+                <div className="flex-1 min-w-0 mr-4">
+                  <h4 className="font-playfair text-lg group-hover:text-zinc-600 transition-colors">{item.name}</h4>
+                  {item.description && (
+                    <p className="text-zinc-400 text-xs mt-0.5 truncate">{item.description}</p>
+                  )}
+                </div>
+                <span className="text-sm font-medium text-zinc-500 whitespace-nowrap">
+                  ${(item.priceCents / 100).toFixed(0)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="text-center mt-12 space-y-4">
+          <p className="text-zinc-400 text-sm">Prices may vary based on guest count and event details</p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <button onClick={() => { onBook(); trackEvent('cta_click_book', { location: 'menu' }); }} className="bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-zinc-800 transition-all">
+              Book Your Event
+            </button>
+            <button onClick={() => { onEstimate(); trackEvent('cta_click_estimate', { location: 'menu' }); }} className="border-2 border-black text-black px-8 py-3 rounded-full font-medium hover:bg-zinc-100 transition-all">
+              Get Free Estimate
+            </button>
+            <button onClick={() => { downloadMenu(); trackEvent('menu_download'); }} className="border border-zinc-300 text-zinc-600 px-8 py-3 rounded-full font-medium hover:bg-zinc-50 transition-all flex items-center space-x-2">
+              <Download className="w-4 h-4" /><span>Full Menu PDF</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; onEstimate: () => void; catalog: CatalogData }) => {
   const { status, submitLead } = useLeadForm();
+  const trackedSections = useRef(new Set<string>());
+
+  useEffect(() => {
+    const sections = document.querySelectorAll('section[id]');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const id = entry.target.id;
+          if (entry.isIntersecting && !trackedSections.current.has(id)) {
+            trackedSections.current.add(id);
+            trackEvent('scroll_to_section', { section: id });
+          }
+        }
+      },
+      { threshold: 0.3 }
+    );
+    sections.forEach((s) => observer.observe(s));
+    return () => observer.disconnect();
+  }, []);
 
   const serviceImages = [
     "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&h=600&fit=crop",
@@ -88,13 +239,13 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-white shadow-sm px-8 py-4 flex justify-between items-center rounded-b-3xl mx-4 mt-2">
         <div className="flex items-center space-x-4">
-          <h1 className="text-2xl font-playfair font-medium">Perfect Perfections</h1>
-          <span className="font-caveat text-lg text-zinc-400 hidden sm:inline">made with soul</span>
+          <span className="text-2xl font-playfair font-medium">Perfect Perfections</span>
+          <span className="font-caveat text-lg text-zinc-400 hidden sm:inline">made with love</span>
         </div>
         <div className="hidden md:flex space-x-8 text-sm font-medium">
-          <a href="#" className="hover:text-zinc-500 transition-colors">Services</a>
-          <a href="#" className="hover:text-zinc-500 transition-colors">About</a>
-          <a href="#" className="hover:text-zinc-500 transition-colors">Gallery</a>
+          <a href="#services" className="hover:text-zinc-500 transition-colors">Services</a>
+          <a href="#menu" className="hover:text-zinc-500 transition-colors">Menu</a>
+          <a href="#about" className="hover:text-zinc-500 transition-colors">About</a>
           <button onClick={onBook} className="hover:text-zinc-500 transition-colors">Book</button>
         </div>
       </nav>
@@ -109,7 +260,7 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
         />
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 text-center text-white px-4 space-y-6">
-          <h2 className="text-5xl md:text-7xl font-playfair leading-tight">
+          <h1 className="text-5xl md:text-7xl font-playfair leading-tight">
             <motion.span
               className="italic block"
               initial={{ opacity: 0, y: 20 }}
@@ -121,15 +272,18 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
             <span className="block text-6xl md:text-8xl mt-2">
               <HandwrittenText text="Perfectly Crafted." delay={0.6} />
             </span>
-          </h2>
+          </h1>
           <p className="text-lg md:text-xl max-w-2xl mx-auto opacity-80 font-light">
-            Chicago's premier soul food catering for events, gatherings, and celebrations
+            Layers of flavor, perfectly crafted for your events, gatherings, and celebrations
           </p>
           <div className="flex flex-wrap justify-center gap-4 pt-4">
-            <button onClick={onBook} className="bg-white text-black px-10 py-4 rounded-full font-medium hover:bg-zinc-100 transition-all shadow-lg">
+            <button onClick={() => { onBook(); trackEvent('cta_click_book', { location: 'hero' }); }} className="bg-white text-black px-10 py-4 rounded-full font-medium hover:bg-zinc-100 transition-all shadow-lg">
               Book Your Event
             </button>
-            <button onClick={() => downloadMenu()} className="border-2 border-white/60 text-white px-10 py-4 rounded-full font-medium hover:bg-white/10 transition-all flex items-center space-x-2">
+            <button onClick={() => { onEstimate(); trackEvent('cta_click_estimate', { location: 'hero' }); }} className="border-2 border-white/60 text-white px-10 py-4 rounded-full font-medium hover:bg-white/10 transition-all">
+              Get Free Estimate
+            </button>
+            <button onClick={() => { downloadMenu(); trackEvent('menu_download', { location: 'hero' }); }} className="border-2 border-white/60 text-white px-10 py-4 rounded-full font-medium hover:bg-white/10 transition-all flex items-center space-x-2">
               <Download className="w-4 h-4" /><span>Download Menu</span>
             </button>
           </div>
@@ -137,13 +291,43 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
       </section>
 
       {/* Services */}
-      <section className="py-32 px-8 bg-white">
+      <section id="services" className="py-32 px-8 bg-white">
         <div className="max-w-7xl mx-auto text-center mb-20 space-y-4">
           <span className="text-xs uppercase tracking-[0.3em] font-bold text-zinc-400">what we offer</span>
           <h2 className="font-caveat text-4xl">something for every occasion</h2>
+          <p className="text-zinc-500 max-w-2xl mx-auto">From intimate dinners to large-scale events, we bring rich, layered flavors to every table. Talk, eat, savor, be thankful.</p>
         </div>
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {serviceCards.map((card, i) => (
+          {[
+            {
+              icon: <UtensilsCrossed />,
+              title: 'Catering Service',
+              desc: 'Full-service catering for any occasion — from drop-off platters to complete setup with professional servers, equipment, and breakdown.',
+              image: serviceImages[0],
+              cta: 'Book Catering',
+            },
+            {
+              icon: <ClipboardList />,
+              title: 'Meal Prep',
+              desc: 'Weekly meal prep tailored to your taste. Fresh, flavorful dishes portioned and ready to heat — eating well made easy.',
+              image: serviceImages[1],
+              cta: 'Learn More',
+            },
+            {
+              icon: <PartyPopper />,
+              title: 'Events & Pop-Ups',
+              desc: 'Weddings, corporate events, birthdays, holiday parties, and community pop-ups. We bring the flavor, you bring the guests.',
+              image: serviceImages[2],
+              cta: 'Plan Your Event',
+            },
+            {
+              icon: <ChefHat />,
+              title: 'Private Chef',
+              desc: 'An intimate, personalized dining experience in your home. Perfect for date nights, small gatherings, or treating yourself.',
+              image: serviceImages[3],
+              cta: 'Book a Chef',
+            },
+          ].map((card, i) => (
             <div key={i} className="bg-white rounded-[40px] shadow-sm border border-zinc-100 hover:shadow-xl transition-all group overflow-hidden">
               <div className="h-40 overflow-hidden">
                 <img src={card.image} alt={card.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
@@ -154,9 +338,11 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
                 </div>
                 <h3 className="text-xl font-playfair">{card.title}</h3>
                 <p className="text-zinc-500 text-sm leading-relaxed">{card.desc}</p>
-                <div className="pt-4 border-t border-zinc-50 flex justify-between items-center">
-                  <span className="text-sm font-medium text-zinc-400">{card.price}</span>
-                  <ArrowRight className="w-5 h-5 text-zinc-300 group-hover:text-black transition-colors" />
+                <div className="pt-4 border-t border-zinc-50">
+                  <button onClick={() => { onBook(); trackEvent('cta_click_book', { location: `service_${i}` }); }} className="flex items-center space-x-2 text-sm font-medium text-zinc-600 group-hover:text-black transition-colors">
+                    <span>{card.cta}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -164,38 +350,11 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
         </div>
       </section>
 
-      {/* Signature Dishes */}
-      <section className="py-32 px-8 bg-zinc-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20 space-y-4">
-            <span className="text-xs uppercase tracking-[0.3em] font-bold text-zinc-400">our favorites</span>
-            <h2 className="font-caveat text-4xl">Signature Dishes</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-            {catalog.dishes.map((dish) => (
-              <div key={dish.id} className="bg-white p-8 rounded-[40px] shadow-sm hover:shadow-xl transition-all space-y-6">
-                {dish.imageUrl && (
-                  <div className="aspect-video rounded-3xl overflow-hidden">
-                    <img
-                      src={dish.imageUrl}
-                      alt={dish.name}
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-playfair">{dish.name}</h3>
-                  <p className="text-zinc-500 text-sm leading-relaxed">{dish.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Menu */}
+      <MenuSection menuItems={catalog.menuItems || []} onBook={onBook} onEstimate={onEstimate} />
 
       {/* About */}
-      <section className="py-32 px-8 bg-[#F0F0F0]">
+      <section id="about" className="py-32 px-8 bg-[#F0F0F0]">
         <div className="max-w-3xl mx-auto text-center space-y-12">
           <div className="relative inline-block">
             <div className="w-44 h-44 rounded-full overflow-hidden border-8 border-white shadow-xl mx-auto">
@@ -214,8 +373,69 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
         </div>
       </section>
 
+      {/* Testimonials */}
+      <section id="testimonials" className="py-32 px-8 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16 space-y-4">
+            <span className="text-xs uppercase tracking-[0.3em] font-bold text-zinc-400">what people are saying</span>
+            <h2 className="font-caveat text-4xl">Thriving Flavors, Serving Others</h2>
+            <p className="text-zinc-500 max-w-xl mx-auto">Real words from real clients — peace, joy, hope, and love in every plate.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                name: 'Michele',
+                label: 'Repeat Client',
+                quote: 'Your service was awesome. Everyone loved everything again. Put me down for superbowl catering.',
+              },
+              {
+                name: 'Danielle',
+                label: 'Client',
+                quote: 'My family LOVED the food!!! Thanks again!',
+              },
+              {
+                name: 'Cynthia West',
+                label: 'Client',
+                quote: "Everyone raved about your food!! It was delicious!!!!!! I'm firing my other caterers going forward. No comparison!!!!",
+              },
+              {
+                name: 'El Valor Event Client',
+                label: 'Corporate Event',
+                quote: "This food is so good I just don't know how you do it. Thank you for making this happen.",
+              },
+              {
+                name: 'Monique',
+                label: 'Repeat Client',
+                quote: 'A loyal customer who keeps coming back and refers her entire family. Her aunt even reached out to pay a deposit directly.',
+              },
+              {
+                name: 'Jade Allen',
+                label: 'Client',
+                quote: 'Thank you for everything. People still talking about the food. Appreciate you so much. It was beautiful.',
+              },
+            ].map((t, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="bg-zinc-50 rounded-[32px] p-8 space-y-4 relative"
+              >
+                <div className="font-caveat text-5xl text-zinc-200 leading-none">"</div>
+                <p className="text-zinc-700 leading-relaxed italic">{t.quote}</p>
+                <div className="pt-4 border-t border-zinc-100">
+                  <p className="font-playfair font-medium">{t.name}</p>
+                  <p className="text-xs text-zinc-400">{t.label}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Lead Capture */}
-      <section className="py-32 px-8">
+      <section id="contact" className="py-32 px-8">
         <div className="max-w-4xl mx-auto bg-white p-12 md:p-20 rounded-[60px] shadow-2xl border border-zinc-50">
           <div className="text-center mb-16 space-y-4">
             <span className="text-xs uppercase tracking-[0.3em] font-bold text-zinc-400">let's connect</span>
@@ -265,6 +485,29 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
         </div>
       </section>
 
+      {/* FAQ */}
+      <section id="faq" className="py-32 px-8 bg-white">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-16 space-y-4">
+            <span className="text-xs uppercase tracking-[0.3em] font-bold text-zinc-400">common questions</span>
+            <h2 className="font-caveat text-4xl">Frequently Asked Questions</h2>
+          </div>
+          <div className="space-y-4">
+            {FAQ_ITEMS.map((item, i) => (
+              <details key={i} className="group bg-zinc-50 rounded-2xl overflow-hidden">
+                <summary className="cursor-pointer px-8 py-5 font-playfair text-lg flex justify-between items-center list-none [&::-webkit-details-marker]:hidden">
+                  {item.question}
+                  <span className="text-zinc-400 group-open:rotate-45 transition-transform text-2xl leading-none">+</span>
+                </summary>
+                <div className="px-8 pb-6 text-zinc-600 leading-relaxed">
+                  {item.answer}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Gallery */}
       <section className="py-32 px-8">
         <div className="max-w-7xl mx-auto">
@@ -274,15 +517,15 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
             {[
-              "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&h=800&fit=crop",
-              "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&h=800&fit=crop",
-              "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&h=800&fit=crop",
-              "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&h=800&fit=crop",
-              "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&h=800&fit=crop",
-              "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&h=800&fit=crop"
-            ].map((url, i) => (
+              { url: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&h=800&fit=crop", alt: "Beautifully plated soul food entree with fresh herbs" },
+              { url: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&h=800&fit=crop", alt: "Wood-fired flatbread with fresh toppings" },
+              { url: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&h=800&fit=crop", alt: "Colorful fresh salad with seasonal vegetables" },
+              { url: "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&h=800&fit=crop", alt: "Decadent layered dessert with cream and berries" },
+              { url: "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&h=800&fit=crop", alt: "Elegantly garnished appetizer plate" },
+              { url: "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&h=800&fit=crop", alt: "Stacked brunch pancakes with fresh fruit and syrup" },
+            ].map((img, i) => (
               <div key={i} className="aspect-square rounded-[40px] overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2">
-                <img src={url} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <img src={img.url} alt={img.alt} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               </div>
             ))}
           </div>
@@ -293,11 +536,19 @@ export const MockupC = ({ onBook, catalog }: { onBook: () => void; catalog: Cata
       <footer className="bg-[#1A1A1A] text-white py-24 px-8 rounded-t-[60px]">
         <div className="max-w-4xl mx-auto text-center space-y-8">
           <h2 className="text-4xl font-playfair">Perfect Perfections</h2>
-          <span className="font-caveat text-2xl text-zinc-500 block">made with soul</span>
+          <span className="font-caveat text-2xl text-zinc-500 block">made with love</span>
+          <nav className="flex flex-wrap justify-center gap-6 text-sm text-zinc-500">
+            <a href="#services" className="hover:text-white transition-colors">Services</a>
+            <a href="#menu" className="hover:text-white transition-colors">Menu</a>
+            <a href="#about" className="hover:text-white transition-colors">About</a>
+            <a href="#testimonials" className="hover:text-white transition-colors">Testimonials</a>
+            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
+            <a href="#contact" className="hover:text-white transition-colors">Contact</a>
+          </nav>
           <div className="flex justify-center space-x-8 text-zinc-400">
-            <a href="#" className="hover:text-white transition-colors">Phone</a>
-            <a href="#" className="hover:text-white transition-colors">Email</a>
-            <a href="#" className="hover:text-white transition-colors">Instagram</a>
+            <a href="tel:+17739366416" className="hover:text-white transition-colors">(773) 936-6416</a>
+            <a href="mailto:perfectperfectionscatering@gmail.com" className="hover:text-white transition-colors">Email</a>
+            <a href="https://instagram.com/perfectperfectionscatering" target="_blank" className="hover:text-white transition-colors">Instagram</a>
           </div>
           <p className="text-zinc-500">South Side Chicago</p>
           <div className="pt-12 border-t border-white/5 flex flex-col items-center space-y-4">

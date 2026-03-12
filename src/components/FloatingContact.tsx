@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Instagram, Phone, MessageCircle } from 'lucide-react';
+import { trackEvent } from '../lib/analytics';
 
 export const FloatingContact = () => {
   const [expanded, setExpanded] = useState(false);
@@ -11,7 +12,8 @@ export const FloatingContact = () => {
         {expanded && (
           <>
             <motion.a
-              href="tel:+17730000000"
+              href="tel:+17739366416"
+              onClick={() => trackEvent('cta_click_call', { location: 'floating_contact' })}
               initial={{ opacity: 0, y: 10, scale: 0.8 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.8 }}
@@ -22,7 +24,8 @@ export const FloatingContact = () => {
               <span className="text-xs font-bold">Call</span>
             </motion.a>
             <motion.a
-              href="sms:+17730000000"
+              href="sms:+17739366416"
+              onClick={() => trackEvent('cta_click_text', { location: 'floating_contact' })}
               initial={{ opacity: 0, y: 10, scale: 0.8 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.8 }}
@@ -33,8 +36,9 @@ export const FloatingContact = () => {
               <span className="text-xs font-bold">Text</span>
             </motion.a>
             <motion.a
-              href="https://instagram.com"
+              href="https://instagram.com/perfectperfectionscatering"
               target="_blank"
+              onClick={() => trackEvent('cta_click_instagram', { location: 'floating_contact' })}
               initial={{ opacity: 0, y: 10, scale: 0.8 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 10, scale: 0.8 }}

@@ -56,6 +56,7 @@ const makeBooking = (overrides?: Partial<BookingRequest>): BookingRequest => ({
   guestCount: 20,
   packageId: 'pkg-gold',
   addonIds: [],
+  menuItemIds: [],
   notes: '',
   ...overrides,
 });

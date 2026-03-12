@@ -35,6 +35,39 @@ export const SIGNATURE_DISHES = [
   }
 ];
 
+// --- Fallback Menu Items for Booking Selection ---
+export const FALLBACK_MENU_ITEMS = [
+  // Entrées
+  { name: 'Shrimp & Grits', category: 'Entrées' },
+  { name: 'Bacon-Wrapped Stuffed Chicken', category: 'Entrées' },
+  { name: 'Signature Soul Rolls', category: 'Entrées' },
+  { name: 'Baked Chicken', category: 'Entrées' },
+  { name: 'Fried Chicken Wings', category: 'Entrées' },
+  { name: 'BBQ Ribs', category: 'Entrées' },
+  { name: 'Smothered Pork Chops', category: 'Entrées' },
+  { name: 'Oxtails', category: 'Entrées' },
+  { name: 'Salmon Croquettes', category: 'Entrées' },
+  // Sides
+  { name: 'Mac & Cheese', category: 'Sides' },
+  { name: 'Collard Greens', category: 'Sides' },
+  { name: 'Candied Yams', category: 'Sides' },
+  { name: 'Dirty Rice', category: 'Sides' },
+  { name: 'Corn on the Cob', category: 'Sides' },
+  { name: 'Green Beans', category: 'Sides' },
+  { name: 'Potato Salad', category: 'Sides' },
+  { name: 'Coleslaw', category: 'Sides' },
+  // Breakfast & Brunch
+  { name: 'French Toast', category: 'Breakfast & Brunch' },
+  { name: 'Scrambled Eggs', category: 'Breakfast & Brunch' },
+  { name: 'Turkey Bacon & Sausage', category: 'Breakfast & Brunch' },
+  { name: 'Waffle Bar', category: 'Breakfast & Brunch' },
+  // Desserts
+  { name: 'Southern Pecan Pie', category: 'Desserts' },
+  { name: 'Banana Pudding', category: 'Desserts' },
+  { name: 'Peach Cobbler', category: 'Desserts' },
+  { name: 'Gourmet Dipped Treats', category: 'Desserts' },
+];
+
 // --- Catering Packages & Pricing ---
 export type IconName = 'utensils' | 'truck' | 'cake';
 
@@ -96,6 +129,33 @@ export const MENU_ADDONS = [
 ];
 
 export const DEPOSIT_RATE = 0.25;
+
+export const FAQ_ITEMS = [
+  {
+    question: 'How much does catering cost?',
+    answer: 'Packages start at $35 per person for drop-off service. Full-service catering with setup runs $275, with 2 servers $375, and with 3 servers $475 per person. Final pricing depends on guest count, menu selections, and event details.',
+  },
+  {
+    question: 'What types of events do you cater?',
+    answer: 'We cater weddings, corporate events, private parties, birthdays, graduations, holiday gatherings, funerals and repasts, and more. No event is too small or too large.',
+  },
+  {
+    question: "What's on the menu?",
+    answer: 'Our menu features made-from-scratch dishes with rich, layered flavors — including shrimp & grits, bacon-wrapped stuffed chicken, signature soul rolls, mac & cheese, collard greens, and more. We also offer breakfast/brunch, appetizers, and desserts. You can download our full menu PDF on our website.',
+  },
+  {
+    question: 'Do you provide servers and setup?',
+    answer: 'Yes! Our Full Service packages include racks, burners, plates, napkins, cutlery, setup, and breakdown. You can choose packages with 2 or 3 professional servers depending on your event size.',
+  },
+  {
+    question: 'How do I book Perfect Perfections Catering?',
+    answer: 'You can book by calling or texting (773) 936-6416, sending a message through our website contact form, or DMing us on Instagram @perfectperfectionscatering. We typically respond within 24 hours. A 25% deposit is required to secure your date.',
+  },
+  {
+    question: 'What areas do you serve?',
+    answer: 'We are based on Chicago\'s South Side and serve the greater Chicago metropolitan area including surrounding suburbs. Contact us for events outside the Chicagoland area.',
+  },
+];
 
 // Map icon string identifiers to render at component level
 export const ICON_MAP: Record<IconName, string> = {

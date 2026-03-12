@@ -22,7 +22,7 @@ import {
 import { useSquare } from '../lib/square/useSquare';
 import { isSquareConfigured } from '../lib/square/config';
 import type { CatalogData, IconName } from '../lib/square/types';
-import type { BookingStep } from '../hooks/useBookingFlow';
+import type { BookingStep, BookingMode } from '../hooks/useBookingFlow';
 import type { useBookingFlow } from '../hooks/useBookingFlow';
 import { downloadMenu } from '../utils/downloadMenu';
 
@@ -46,16 +46,26 @@ export const BookingModal = ({
   const activeQuote = flow.squareQuote ?? flow.fallbackQuote;
   const totalAmount = activeQuote ? activeQuote.totalCents / 100 : flow.total;
   const depositAmount = activeQuote ? activeQuote.depositCents / 100 : flow.deposit;
+  const isEstimate = flow.mode === 'estimate';
 
   if (!flow.isOpen) return null;
 
-  const stepInfo: Record<BookingStep, { num: number; title: string }> = {
+  const bookStepInfo: Record<BookingStep, { num: number; title: string }> = {
     package: { num: 1, title: 'Choose Your Package' },
     details: { num: 2, title: 'Your Details & Customize' },
     quote: { num: 3, title: 'Your Quote' },
     deposit: { num: 4, title: 'Secure Your Date' },
     confirmed: { num: 5, title: 'Booking Confirmed' },
   };
+  const estimateStepInfo: Record<BookingStep, { num: number; title: string }> = {
+    package: { num: 1, title: 'Choose Your Package' },
+    details: { num: 2, title: 'Event Details' },
+    quote: { num: 3, title: 'Your Free Estimate' },
+    deposit: { num: 3, title: 'Your Free Estimate' },
+    confirmed: { num: 3, title: 'Estimate Sent' },
+  };
+  const stepInfo = isEstimate ? estimateStepInfo : bookStepInfo;
+  const totalSteps = isEstimate ? 3 : 5;
   const info = stepInfo[flow.step];
 
   // Handle Square quote generation
@@ -157,7 +167,7 @@ export const BookingModal = ({
               </button>
             )}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Step {info.num} of 5</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Step {info.num} of {totalSteps}</p>
               <h2 className="text-lg font-bold">{info.title}</h2>
             </div>
           </div>
@@ -177,7 +187,7 @@ export const BookingModal = ({
         {/* Progress */}
         <div className="px-8 pt-4">
           <div className="flex space-x-1">
-            {['package', 'details', 'quote', 'deposit', 'confirmed'].map((s, i) => (
+            {(isEstimate ? ['package', 'details', 'quote'] : ['package', 'details', 'quote', 'deposit', 'confirmed']).map((s, i) => (
               <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${i < info.num ? 'bg-black' : 'bg-zinc-200'}`} />
             ))}
           </div>
@@ -325,6 +335,57 @@ export const BookingModal = ({
                 </div>
               </div>
 
+              {/* Menu Item Selection */}
+              {catalog.menuItems && catalog.menuItems.length > 0 && (() => {
+                const filtered = catalog.menuItems.filter(item => !/deposit|balance|gratuity|delivery|extra plate|individual packaging|liquor|mixer|decoration|beverage|juice|water|assorted snack|assorted chip|meal prep|vegetarian.*gluten|wine bar|full service|dropoff|catering for/i.test(item.name));
+                const grouped: Record<string, typeof filtered> = {};
+                for (const item of filtered) {
+                  const cat = item.category || 'Other';
+                  if (!grouped[cat]) grouped[cat] = [];
+                  grouped[cat].push(item);
+                }
+                const categoryOrder = ['Entrées', 'Sides', 'Sides & Salads', 'Appetizers', 'Breakfast & Brunch', 'Desserts', 'Other'];
+                const sortedCategories = Object.keys(grouped).sort((a, b) => {
+                  const ai = categoryOrder.indexOf(a);
+                  const bi = categoryOrder.indexOf(b);
+                  return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+                });
+                return (
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">What Would You Like Served?</label>
+                    <p className="text-xs text-zinc-400">Select the dishes you'd like at your event — included with your package</p>
+                    <div className="max-h-72 overflow-y-auto border-2 border-zinc-100 rounded-xl p-4 space-y-5">
+                      {sortedCategories.map((cat) => (
+                        <div key={cat}>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">{cat}</p>
+                          <div className="space-y-1.5">
+                            {grouped[cat].map((item) => (
+                              <button
+                                key={item.id}
+                                onClick={() => flow.toggleMenuItem(item.id)}
+                                className={`w-full flex items-center p-2.5 rounded-lg border transition-all text-left ${
+                                  flow.selectedMenuItems.includes(item.id) ? 'border-black bg-zinc-50' : 'border-zinc-100 hover:border-zinc-300'
+                                }`}
+                              >
+                                <div className="flex items-center space-x-3 min-w-0">
+                                  <div className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center ${flow.selectedMenuItems.includes(item.id) ? 'border-black bg-black' : 'border-zinc-300'}`}>
+                                    {flow.selectedMenuItems.includes(item.id) && <Check className="w-2.5 h-2.5 text-white" />}
+                                  </div>
+                                  <span className="font-medium text-sm truncate">{item.name}</span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {flow.selectedMenuItems.length > 0 && (
+                      <p className="text-xs text-zinc-500">{flow.selectedMenuItems.length} dish{flow.selectedMenuItems.length !== 1 ? 'es' : ''} selected</p>
+                    )}
+                  </div>
+                );
+              })()}
+
               <div className="space-y-3">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Add-Ons</label>
                 {catalog.addons.map((addon) => (
@@ -364,9 +425,9 @@ export const BookingModal = ({
                 className="w-full bg-black text-white py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {flow.squareLoading ? (
-                  <><Loader2 className="w-5 h-5 animate-spin" /><span>Generating Quote...</span></>
+                  <><Loader2 className="w-5 h-5 animate-spin" /><span>Generating {isEstimate ? 'Estimate' : 'Quote'}...</span></>
                 ) : (
-                  <span>See Your Quote →</span>
+                  <span>{isEstimate ? 'See Your Estimate →' : 'See Your Quote →'}</span>
                 )}
               </button>
             </div>
@@ -422,6 +483,16 @@ export const BookingModal = ({
                   <Utensils className="w-4 h-4" />
                   <span>{flow.guests} guests · {flow.pkg?.name || activeQuote.lineItems[0]?.name || 'Catering'}</span>
                 </div>
+                {flow.selectedMenuItems.length > 0 && (
+                  <div className="flex items-start space-x-2 text-zinc-600">
+                    <Utensils className="w-4 h-4 mt-0.5" />
+                    <span>Menu: {flow.selectedMenuItems
+                      .map(id => (catalog.menuItems || []).find(m => m.id === id)?.name)
+                      .filter(Boolean)
+                      .join(', ')
+                    }</span>
+                  </div>
+                )}
                 {flow.notes && (
                   <div className="flex items-start space-x-2 text-zinc-600">
                     <FileText className="w-4 h-4 mt-0.5" />
@@ -430,23 +501,45 @@ export const BookingModal = ({
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                 <button onClick={() => downloadMenu()} className="flex items-center justify-center space-x-2 py-4 border-2 border-zinc-200 rounded-xl font-bold text-sm hover:bg-zinc-50 transition-colors">
-                  <Download className="w-4 h-4" />
-                  <span>Download Quote</span>
-                </button>
-                <button
-                  onClick={handlePayDeposit}
-                  disabled={flow.squareLoading}
-                  className="flex items-center justify-center space-x-2 py-4 bg-black text-white rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors disabled:opacity-50"
-                >
-                  {flow.squareLoading ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /><span>Creating Order...</span></>
-                  ) : (
-                    <><CreditCard className="w-4 h-4" /><span>Pay Deposit →</span></>
-                  )}
-                </button>
-              </div>
+              {isEstimate ? (
+                <div className="space-y-4">
+                  <div className="bg-amber-50 rounded-2xl p-6 text-center space-y-2">
+                    <p className="text-sm font-bold text-amber-800">This is a free estimate — no payment required</p>
+                    <p className="text-xs text-amber-600">Prices may vary based on final menu selections and event details. Nikida will follow up to finalize your order.</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button onClick={() => downloadMenu()} className="flex items-center justify-center space-x-2 py-4 border-2 border-zinc-200 rounded-xl font-bold text-sm hover:bg-zinc-50 transition-colors">
+                      <Download className="w-4 h-4" />
+                      <span>Download Menu</span>
+                    </button>
+                    <button
+                      onClick={() => { flow.setMode('book'); flow.setStep('details'); }}
+                      className="flex items-center justify-center space-x-2 py-4 bg-black text-white rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      <span>Ready to Book →</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                   <button onClick={() => downloadMenu()} className="flex items-center justify-center space-x-2 py-4 border-2 border-zinc-200 rounded-xl font-bold text-sm hover:bg-zinc-50 transition-colors">
+                    <Download className="w-4 h-4" />
+                    <span>Download Quote</span>
+                  </button>
+                  <button
+                    onClick={handlePayDeposit}
+                    disabled={flow.squareLoading}
+                    className="flex items-center justify-center space-x-2 py-4 bg-black text-white rounded-xl font-bold text-sm hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                  >
+                    {flow.squareLoading ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /><span>Creating Order...</span></>
+                    ) : (
+                      <><CreditCard className="w-4 h-4" /><span>Pay Deposit →</span></>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

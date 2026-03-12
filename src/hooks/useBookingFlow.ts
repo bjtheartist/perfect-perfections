@@ -3,9 +3,11 @@ import type { BookingRequest, Quote as SquareQuote, CatalogData } from '../lib/s
 import { buildQuoteFromCatalog } from '../lib/quote';
 
 export type BookingStep = 'package' | 'details' | 'quote' | 'deposit' | 'confirmed';
+export type BookingMode = 'book' | 'estimate';
 
 export const useBookingFlow = (catalog: CatalogData) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [mode, setMode] = useState<BookingMode>('book');
   const [step, setStep] = useState<BookingStep>('package');
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
   const [guests, setGuests] = useState(50);
@@ -13,6 +15,7 @@ export const useBookingFlow = (catalog: CatalogData) => {
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('12:00');
   const [addons, setAddons] = useState<string[]>([]);
+  const [selectedMenuItems, setSelectedMenuItems] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
 
   // Customer info (needed for Square)
@@ -41,6 +44,7 @@ export const useBookingFlow = (catalog: CatalogData) => {
     guestCount: guests,
     packageId: selectedPackage || catalog.packages[0]?.id || 'custom',
     addonIds: addons,
+    menuItemIds: selectedMenuItems,
     notes,
   });
 
@@ -48,15 +52,16 @@ export const useBookingFlow = (catalog: CatalogData) => {
   const total = fallbackQuote.totalCents / 100;
   const deposit = fallbackQuote.depositCents / 100;
 
-  const open = () => { setIsOpen(true); setStep('package'); setSquareError(null); };
+  const open = (bookingMode: BookingMode = 'book') => { setIsOpen(true); setMode(bookingMode); setStep('package'); setSquareError(null); };
   const close = () => setIsOpen(false);
   const toggleAddon = (id: string) => setAddons(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleMenuItem = (id: string) => setSelectedMenuItems(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   return {
-    isOpen, step, selectedPackage, guests, eventType, eventDate, eventTime, addons, notes, pkg, total, deposit,
+    isOpen, mode, step, selectedPackage, guests, eventType, eventDate, eventTime, addons, notes, pkg, total, deposit,
     customerName, customerEmail, customerPhone,
     squareQuote, fallbackQuote, squareOrderId, squareInvoiceId, squareInvoiceUrl, squareReceiptUrl, squareLoading, squareError,
-    setStep, setSelectedPackage, setGuests, setEventType, setEventDate, setEventTime, setNotes, toggleAddon,
+    selectedMenuItems, setMode, setStep, setSelectedPackage, setGuests, setEventType, setEventDate, setEventTime, setNotes, toggleAddon, toggleMenuItem,
     setCustomerName, setCustomerEmail, setCustomerPhone,
     setSquareQuote, setSquareOrderId, setSquareInvoiceId, setSquareInvoiceUrl, setSquareReceiptUrl, setSquareLoading, setSquareError,
     buildBookingRequest,

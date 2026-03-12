@@ -53,10 +53,20 @@ export interface CatalogDish {
   imageUrl?: string;
 }
 
+export interface CatalogMenuItem {
+  id: string;
+  name: string;
+  description: string;
+  priceCents: number;
+  category: string;
+  imageUrl?: string;
+}
+
 export interface CatalogData {
   packages: CatalogPackage[];
   addons: CatalogAddon[];
   dishes: CatalogDish[];
+  menuItems?: CatalogMenuItem[];
   fetchedAt: number;
 }
 
@@ -71,6 +81,7 @@ export interface BookingRequest {
   guestCount: number;
   packageId: string;
   addonIds: string[];
+  menuItemIds: string[];
   notes: string;
 }
 

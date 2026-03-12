@@ -31,7 +31,7 @@ export default function App() {
 
   return (
     <div className="relative">
-      <MockupC onBook={booking.open} catalog={catalog} />
+      <MockupC onBook={() => booking.open('book')} onEstimate={() => booking.open('estimate')} catalog={catalog} />
       <FloatingContact />
       <AnimatePresence>
         {booking.isOpen && <BookingModal flow={booking} catalog={catalog} isLive={isLive} />}

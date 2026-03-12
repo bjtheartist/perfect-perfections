@@ -1,11 +1,20 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { randomUUID } from 'crypto';
-import { squareClient } from '../_lib/square';
-import { requireAdmin } from '../_lib/admin';
-import { cors } from '../_lib/cors';
+import { SquareClient, SquareEnvironment } from 'square';
+
+function getClient() {
+  return new SquareClient({
+    token: process.env.SQUARE_ACCESS_TOKEN,
+    environment: process.env.SQUARE_ENVIRONMENT === 'production'
+      ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
+  });
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (cors(req, res)) return;
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-admin-token');
+  if (req.method === 'OPTIONS') return res.status(204).end();
 
   if (req.method === 'POST') return createLead(req, res);
   if (req.method === 'GET') return listLeads(req, res);
@@ -23,11 +32,11 @@ async function createLead(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Invalid email address' });
     }
 
+    const client = getClient();
     const [givenName, ...rest] = name.trim().split(' ');
     const familyName = rest.join(' ');
 
-    // Create customer in Square
-    const result = await squareClient.customers.create({
+    const result = await client.customers.create({
       idempotencyKey: randomUUID(),
       givenName,
       familyName,
@@ -41,7 +50,6 @@ async function createLead(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Failed to create customer' });
     }
 
-    // Set lead custom attributes
     const guestCount = guests ? Math.min(Math.max(0, Math.round(Number(guests))), 10000) : null;
     const leadData = JSON.stringify({
       event_date: event_date || null,
@@ -50,13 +58,14 @@ async function createLead(req: VercelRequest, res: VercelResponse) {
       message: message?.trim()?.slice(0, 500) || null,
     });
 
+    const ccaClient = (client as any).customerCustomAttributes;
     await Promise.all([
-      squareClient.customerCustomAttributes.upsert({
+      ccaClient.upsert({
         customerId,
         key: 'pp_lead_status',
         customAttribute: { value: 'new' },
       }),
-      squareClient.customerCustomAttributes.upsert({
+      ccaClient.upsert({
         customerId,
         key: 'pp_lead_data',
         customAttribute: { value: leadData },
@@ -71,23 +80,26 @@ async function createLead(req: VercelRequest, res: VercelResponse) {
 }
 
 async function listLeads(req: VercelRequest, res: VercelResponse) {
-  if (!requireAdmin(req, res)) return;
+  const secret = process.env.ADMIN_SECRET;
+  if (secret && req.headers['x-admin-token'] !== secret) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
 
   try {
-    // List all customers, filter for those with pp_lead_status
+    const client = getClient();
     const customers: any[] = [];
-    for await (const c of await squareClient.customers.list({
+    for await (const c of await client.customers.list({
       sortField: 'CREATED_AT',
       sortOrder: 'DESC',
-    })) {
+    }) as any) {
       customers.push(c);
     }
 
-    // Fetch lead custom attributes for each customer
     const leads = [];
+    const ccaClient = (client as any).customerCustomAttributes;
     for (const c of customers) {
       try {
-        const statusAttr = await squareClient.customerCustomAttributes.get({
+        const statusAttr = await ccaClient.get({
           customerId: c.id,
           key: 'pp_lead_status',
         });
@@ -95,12 +107,12 @@ async function listLeads(req: VercelRequest, res: VercelResponse) {
 
         let leadData: any = {};
         try {
-          const dataAttr = await squareClient.customerCustomAttributes.get({
+          const dataAttr = await ccaClient.get({
             customerId: c.id,
             key: 'pp_lead_data',
           });
           leadData = JSON.parse(dataAttr.customAttribute?.value as string || '{}');
-        } catch { /* no lead data */ }
+        } catch {}
 
         leads.push({
           id: c.id,
@@ -114,9 +126,7 @@ async function listLeads(req: VercelRequest, res: VercelResponse) {
           status: statusAttr.customAttribute.value,
           created_at: c.createdAt || '',
         });
-      } catch {
-        // Not a lead — skip
-      }
+      } catch {}
     }
 
     res.json(leads);

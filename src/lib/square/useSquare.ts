@@ -97,7 +97,7 @@ export function useSquare() {
     (invoiceId: string) => {
       return withLoading(() =>
         apiFetch<{ invoiceId: string; status: string; publicUrl?: string }>(
-          `/square/invoices/${encodeURIComponent(invoiceId)}`
+          `/square/invoices?invoiceId=${encodeURIComponent(invoiceId)}`
         )
       );
     },

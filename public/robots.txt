@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://perfectperfectionscatering.com/sitemap.xml

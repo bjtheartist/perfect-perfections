@@ -1,23 +1,60 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { randomUUID } from 'crypto';
-import { squareClient, LOCATION_ID } from '../_lib/square';
-import { cors } from '../_lib/cors';
+import { SquareClient, SquareEnvironment } from 'square';
+
+function getClient() {
+  return new SquareClient({
+    token: process.env.SQUARE_ACCESS_TOKEN,
+    environment: process.env.SQUARE_ENVIRONMENT === 'production'
+      ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
+  });
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (cors(req, res)) return;
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(204).end();
 
-  const { orderId, customerEmail, depositCents, dueDate } = req.body;
+  if (req.method === 'GET') return getInvoice(req, res);
+  if (req.method === 'POST') return createInvoice(req, res);
+  return res.status(405).json({ error: 'Method not allowed' });
+}
+
+async function getInvoice(req: VercelRequest, res: VercelResponse) {
+  const { invoiceId } = req.query;
+  if (!invoiceId) return res.status(400).json({ error: 'invoiceId query param required' });
+
   try {
-    const searchResult = await squareClient.customers.search({
-      query: { filter: { emailAddress: { exact: customerEmail } } },
-    });
-    const customerId = searchResult.customers?.[0]?.id;
-    if (!customerId) return res.status(400).json({ success: false, error: 'Customer not found' });
+    const result = await getClient().invoices.get({ invoiceId: invoiceId as string });
+    const invoice = result.invoice;
+    res.json({ success: true, data: { invoiceId: invoice?.id, status: invoice?.status, publicUrl: invoice?.publicUrl } });
+  } catch (error: any) {
+    console.error('Square Invoice Status Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
 
-    const invoiceResult = await squareClient.invoices.create({
+async function createInvoice(req: VercelRequest, res: VercelResponse) {
+  const { orderId, customerEmail, depositCents, dueDate } = req.body;
+  const locationId = process.env.SQUARE_LOCATION_ID || '';
+  const client = getClient();
+
+  try {
+    let customerId: string | undefined;
+    try {
+      const searchResult = await client.customers.search({
+        query: { filter: { emailAddress: { exact: customerEmail } } },
+      });
+      customerId = searchResult.customers?.[0]?.id;
+    } catch (searchErr: any) {
+      console.error('Customer search error:', searchErr);
+    }
+    if (!customerId) return res.status(400).json({ success: false, error: `Customer not found for ${customerEmail}` });
+
+    const invoiceResult = await client.invoices.create({
       invoice: {
-        locationId: LOCATION_ID,
+        locationId,
         orderId,
         primaryRecipient: { customerId },
         paymentRequests: [
@@ -44,7 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let finalStatus = invoice?.status;
 
     if (invoice?.id && invoice?.version !== undefined) {
-      const publishResult = await squareClient.invoices.publish({
+      const publishResult = await client.invoices.publish({
         invoiceId: invoice.id,
         version: invoice.version,
       });
