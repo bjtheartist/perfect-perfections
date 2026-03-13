@@ -68,6 +68,77 @@ export const FALLBACK_MENU_ITEMS = [
   { name: 'Gourmet Dipped Treats', category: 'Desserts' },
 ];
 
+// --- Meal Prep Menu ---
+export const MEAL_PREP_PREFIXE = [
+  { name: 'Pepper Steak, Rice & Broccoli', price: 25 },
+  { name: 'Lasagna w/ Turkey Italian Sausage & Mixed Green Salad', price: 30 },
+  { name: 'Cajun or Jerk Chicken Pasta w/ Broccoli', price: 25 },
+  { name: 'Cajun or Jerk Salmon Pasta w/ Asparagus', price: 30 },
+  { name: 'Cajun Shrimp, Garlic Butter Noodles & Asparagus', price: 25 },
+  { name: 'Philly Steak Pasta w/ Asparagus', price: 30 },
+  { name: 'White Spaghetti w/ Turkey Italian Sausage & Roast Vegetables', price: 25 },
+  { name: 'Stuffed Salmon Shells w/ Roasted Vegetables', price: 30 },
+  { name: 'Turkey Meatballs w/ Garlic Mashed Potatoes & Roasted Vegetables', price: 25 },
+  { name: 'Chimichurri Chicken w/ Garlic Parmesan Potatoes & Roasted Vegetables', price: 25 },
+  { name: 'Garlic Butter Salmon w/ Asparagus & Mashed Potatoes', price: 30 },
+  { name: 'Turkey Meatballs w/ Mashed Potatoes & Asparagus', price: 25 },
+  { name: 'Chimichurri Steak Bites w/ Mashed Potatoes & Jalapeño Cream Corn', price: 30 },
+  { name: 'Beef Short Ribs w/ Brussel Sprouts, White Cheddar Mac & Cheese', price: 30 },
+  { name: 'Stuffed Chicken Breast w/ Roasted Potatoes & Brussel Sprouts', price: 30 },
+  { name: 'Stuffed Salmon w/ Mashed Potatoes & Asparagus', price: 30 },
+];
+
+export const MEAL_PREP_BUILD_YOUR_OWN = {
+  description: '6 different meals will be prepared',
+  proteins: {
+    pick: 3,
+    options: [
+      'Salmon (fried, jerk, lemon garlic, teriyaki, garlic & herb)',
+      'Lamb Chops (garlic butter, greek, parmesan crusted, jerk, fried)',
+      'Beef Short Ribs',
+      'Pot Roast',
+      'Turkey Meatballs',
+      'Stuffed Chicken Breast',
+      'Stuffed Salmon',
+      'Chicken (fried, jerk, lemon garlic, greek, spicy garlic, garlic & herbs)',
+    ],
+  },
+  vegetables: {
+    pick: 2,
+    options: [
+      'Green Beans', 'Asparagus', 'Roasted Vegetables', 'Broccoli',
+      'Greens', 'Cabbage', 'Garlic Sautéed Spinach', 'Jalapeño Cream Corn', 'Brussel Sprouts',
+    ],
+  },
+  sides: {
+    pick: 2,
+    options: [
+      'Mac & Cheese (yellow cheddar or white cheddar)', 'Oven Roasted Potatoes',
+      'Garlic Mashed Potatoes', 'Sweet Potatoes', 'Red Beans and Rice',
+      'Lemon Garlic Rice', 'Dirty Rice', 'Parmesan Garlic Roasted Potatoes',
+    ],
+  },
+};
+
+export const BUSINESS_MEETING_MENUS = [
+  {
+    name: 'Pasta Bar',
+    items: ['Cajun chicken pasta', 'Jerk salmon pasta', 'Broccoli', 'Caesar Salad', 'Fruit tray', 'Assorted beverages', 'Assorted snacks'],
+  },
+  {
+    name: 'Taco Bar',
+    items: ['Jerk chicken taco meat', 'Steak taco meat', 'Ground turkey taco meat', 'Jalapeño cream corn', 'Toppings (shells, sour cream, pico, lettuce, cheese, etc.)', 'Fruit tray', 'Assorted beverages', 'Assorted snacks'],
+  },
+  {
+    name: 'Plated Entrées',
+    items: ['Garlic & herbs chicken', 'Teriyaki Salmon', 'Garlic mashed potatoes', 'Asparagus', 'Fruit tray', 'Assorted beverages', 'Assorted snacks'],
+  },
+  {
+    name: 'Bites & Bowls',
+    items: ['Garlic butter salmon bites', 'Cajun butter chicken bites', 'White cheddar Mac & cheese', 'Roasted vegetables', 'Fruit tray', 'Assorted beverages', 'Assorted snacks'],
+  },
+];
+
 // --- Catering Packages & Pricing ---
 export type IconName = 'utensils' | 'truck' | 'cake';
 

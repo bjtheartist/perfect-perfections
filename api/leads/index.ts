@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { randomUUID } from 'crypto';
 import { SquareClient, SquareEnvironment } from 'square';
+import nodemailer from 'nodemailer';
 
 function getClient() {
   return new SquareClient({
@@ -72,11 +73,60 @@ async function createLead(req: VercelRequest, res: VercelResponse) {
       }),
     ]);
 
+    // Send notification email to Nikida (non-blocking)
+    notifyNewLead({ name: name.trim(), email: email.trim(), phone, event_date, event_type, guests: guestCount, message }).catch(
+      (err) => console.error('Lead notification failed:', err)
+    );
+
     res.status(201).json({ id: customerId });
   } catch (error: any) {
     console.error('Create Lead Error:', error);
     res.status(500).json({ error: error.message || 'Failed to create lead' });
   }
+}
+
+async function notifyNewLead(lead: {
+  name: string; email: string; phone?: string;
+  event_date?: string; event_type?: string; guests?: number | null; message?: string;
+}) {
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+  const notifyEmail = process.env.NOTIFY_EMAIL || 'perfectperfectionscatering@gmail.com';
+  if (!gmailUser || !gmailAppPassword) return; // Skip if not configured
+
+  const details = [
+    `<strong>Name:</strong> ${lead.name}`,
+    `<strong>Email:</strong> ${lead.email}`,
+    lead.phone ? `<strong>Phone:</strong> ${lead.phone}` : null,
+    lead.event_type ? `<strong>Event Type:</strong> ${lead.event_type}` : null,
+    lead.event_date ? `<strong>Event Date:</strong> ${lead.event_date}` : null,
+    lead.guests ? `<strong>Guests:</strong> ${lead.guests}` : null,
+    lead.message ? `<strong>Message:</strong> ${lead.message}` : null,
+  ].filter(Boolean).join('<br/>');
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: gmailUser, pass: gmailAppPassword },
+  });
+
+  await transporter.sendMail({
+    from: `"Perfect Perfections Website" <${gmailUser}>`,
+    to: notifyEmail,
+    replyTo: lead.email,
+    subject: `New Inquiry from ${lead.name}`,
+    html: `
+      <div style="font-family: Georgia, serif; max-width: 500px; margin: 0 auto;">
+        <h2 style="color: #1B6B4A;">New Website Inquiry</h2>
+        <p>Someone just reached out through your website:</p>
+        <div style="background: #f9f9f9; padding: 20px; border-radius: 12px; border-left: 4px solid #D4A54A;">
+          ${details}
+        </div>
+        <p style="margin-top: 20px; color: #666; font-size: 14px;">
+          Reply directly to <a href="mailto:${lead.email}">${lead.email}</a>${lead.phone ? ` or call ${lead.phone}` : ''}.
+        </p>
+      </div>
+    `,
+  });
 }
 
 async function listLeads(req: VercelRequest, res: VercelResponse) {

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <defs>
+    <!-- Gold gradient -->
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4A54A"/>
+      <stop offset="50%" stop-color="#F2D17C"/>
+      <stop offset="100%" stop-color="#C4943D"/>
+    </linearGradient>
+    <!-- Emerald gradient -->
+    <linearGradient id="emerald" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B6B4A"/>
+      <stop offset="50%" stop-color="#2D8B6A"/>
+      <stop offset="100%" stop-color="#165A3E"/>
+    </linearGradient>
+    <!-- Subtle gold shimmer for accents -->
+    <linearGradient id="goldLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#F2D17C"/>
+      <stop offset="100%" stop-color="#D4A54A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle — deep emerald -->
+  <circle cx="300" cy="300" r="280" fill="url(#emerald)"/>
+
+  <!-- Outer gold ring -->
+  <circle cx="300" cy="300" r="280" fill="none" stroke="url(#gold)" stroke-width="6"/>
+
+  <!-- Inner decorative gold ring -->
+  <circle cx="300" cy="300" r="256" fill="none" stroke="url(#gold)" stroke-width="1.5" opacity="0.5"/>
+
+  <!-- Decorative corner flourishes (gold) — top -->
+  <path d="M 300 60 Q 310 80 330 75 Q 310 90 300 80 Q 290 90 270 75 Q 290 80 300 60Z" fill="url(#gold)" opacity="0.7"/>
+  <!-- bottom -->
+  <path d="M 300 540 Q 310 520 330 525 Q 310 510 300 520 Q 290 510 270 525 Q 290 520 300 540Z" fill="url(#gold)" opacity="0.7"/>
+
+  <!-- Monogram "PP" — elegant intertwined -->
+  <text x="300" y="265" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="160" font-weight="bold" fill="url(#gold)" letter-spacing="-8">PP</text>
+
+  <!-- Decorative line separators -->
+  <line x1="180" y1="290" x2="260" y2="290" stroke="url(#gold)" stroke-width="1.5" opacity="0.6"/>
+  <line x1="340" y1="290" x2="420" y2="290" stroke="url(#gold)" stroke-width="1.5" opacity="0.6"/>
+  <!-- Small diamond in center -->
+  <polygon points="300,283 307,290 300,297 293,290" fill="url(#gold)" opacity="0.7"/>
+
+  <!-- "PERFECT" -->
+  <text x="300" y="340" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="normal" fill="url(#gold)" letter-spacing="12">PERFECT</text>
+
+  <!-- "PERFECTIONS" -->
+  <text x="300" y="385" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="42" font-weight="normal" fill="url(#gold)" letter-spacing="8">PERFECTIONS</text>
+
+  <!-- Decorative line below -->
+  <line x1="180" y1="405" x2="420" y2="405" stroke="url(#gold)" stroke-width="1" opacity="0.4"/>
+
+  <!-- Tagline -->
+  <text x="300" y="440" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="20" fill="#F2D17C" opacity="0.85" letter-spacing="3">CATERING</text>
+
+  <!-- Bottom decorative element — small crown/flourish -->
+  <path d="M 275 470 L 285 458 L 295 468 L 300 455 L 305 468 L 315 458 L 325 470"
+        fill="none" stroke="url(#gold)" stroke-width="1.5" opacity="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

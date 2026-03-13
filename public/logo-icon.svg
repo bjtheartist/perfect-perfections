@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="gold-i" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4A54A"/>
+      <stop offset="50%" stop-color="#F2D17C"/>
+      <stop offset="100%" stop-color="#C4943D"/>
+    </linearGradient>
+    <linearGradient id="emerald-i" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B6B4A"/>
+      <stop offset="50%" stop-color="#2D8B6A"/>
+      <stop offset="100%" stop-color="#165A3E"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="100" cy="100" r="92" fill="url(#emerald-i)"/>
+  <circle cx="100" cy="100" r="92" fill="none" stroke="url(#gold-i)" stroke-width="4"/>
+  <circle cx="100" cy="100" r="82" fill="none" stroke="url(#gold-i)" stroke-width="1" opacity="0.4"/>
+  <text x="100" y="118" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="90" font-weight="bold" fill="url(#gold-i)" letter-spacing="-5">PP</text>
+</svg>

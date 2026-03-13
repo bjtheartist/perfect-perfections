@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" width="480" height="120">
+  <defs>
+    <linearGradient id="gold-w" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4A54A"/>
+      <stop offset="50%" stop-color="#F2D17C"/>
+      <stop offset="100%" stop-color="#C4943D"/>
+    </linearGradient>
+    <linearGradient id="emerald-w" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B6B4A"/>
+      <stop offset="50%" stop-color="#2D8B6A"/>
+      <stop offset="100%" stop-color="#165A3E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Logo mark — emerald circle with gold PP -->
+  <circle cx="52" cy="60" r="44" fill="url(#emerald-w)"/>
+  <circle cx="52" cy="60" r="44" fill="none" stroke="url(#gold-w)" stroke-width="2.5"/>
+  <circle cx="52" cy="60" r="38" fill="none" stroke="url(#gold-w)" stroke-width="0.8" opacity="0.4"/>
+  <text x="52" y="72" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="48" font-weight="bold" fill="url(#gold-w)" letter-spacing="-3">PP</text>
+
+  <!-- Wordmark -->
+  <text x="115" y="52" font-family="Georgia, 'Times New Roman', serif" font-size="32" font-weight="normal" fill="#1B6B4A" letter-spacing="3">PERFECT</text>
+  <text x="115" y="88" font-family="Georgia, 'Times New Roman', serif" font-size="32" font-weight="normal" fill="#1B6B4A" letter-spacing="2">PERFECTIONS</text>
+
+  <!-- Subtle gold accent line -->
+  <line x1="115" y1="57" x2="380" y2="57" stroke="url(#gold-w)" stroke-width="0.8" opacity="0.4"/>
+
+  <!-- Tagline -->
+  <text x="385" y="88" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="13" fill="#C4943D" letter-spacing="2">CATERING</text>
+</svg>
