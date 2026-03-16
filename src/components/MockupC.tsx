@@ -314,6 +314,36 @@ function MealPrepSection({ onBook }: { onBook: () => void }) {
   );
 }
 
+const HERO_IMAGES = [
+  'gallery/herb-chicken.jpg',
+];
+
+function HeroSlideshow() {
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <>
+      {HERO_IMAGES.map((src, i) => (
+        <img
+          key={src}
+          src={`${import.meta.env.BASE_URL}${src}`}
+          alt="Perfect Perfections catering"
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+            i === current ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
+      ))}
+    </>
+  );
+}
+
 export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; onEstimate: () => void; catalog: CatalogData }) => {
   const { status, submitLead } = useLeadForm();
   const trackedSections = useRef(new Set<string>());
@@ -337,10 +367,10 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
   }, []);
 
   const serviceImages = [
-    "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&h=600&fit=crop",
+    `${import.meta.env.BASE_URL}gallery/charcuterie-board-2.jpg`,
+    `${import.meta.env.BASE_URL}gallery/crab-cakes-1.jpg`,
+    `${import.meta.env.BASE_URL}gallery/empanadas.jpg`,
+    `${import.meta.env.BASE_URL}gallery/shrimp-grits.jpg`,
   ];
 
   // Derive service cards from catalog packages
@@ -373,12 +403,7 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
 
       {/* Hero */}
       <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
-        <img
-          src="https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=1920&h=1080&fit=crop"
-          alt="Elegant soul food spread"
-          className="absolute inset-0 w-full h-full object-cover"
-          referrerPolicy="no-referrer"
-        />
+        <HeroSlideshow />
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 text-center text-white px-4 space-y-6">
           <h1 className="text-5xl md:text-7xl font-playfair leading-tight">
@@ -451,7 +476,7 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-[40px] shadow-sm border border-zinc-100 hover:shadow-xl transition-all group overflow-hidden">
               <div className="h-40 overflow-hidden">
-                <img src={card.image} alt={card.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                <img src={card.image} alt={card.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
               <div className="p-8 space-y-4">
                 <div className="w-12 h-12 bg-zinc-50 rounded-2xl flex items-center justify-center text-zinc-400 group-hover:bg-black group-hover:text-white transition-colors">
@@ -639,17 +664,21 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
             <span className="text-xs uppercase tracking-[0.3em] font-bold text-zinc-400">from our kitchen</span>
             <h2 className="font-caveat text-4xl">a taste of what we do</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {[
-              { url: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=800&h=800&fit=crop", alt: "Beautifully plated soul food entree with fresh herbs" },
-              { url: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&h=800&fit=crop", alt: "Wood-fired flatbread with fresh toppings" },
-              { url: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800&h=800&fit=crop", alt: "Colorful fresh salad with seasonal vegetables" },
-              { url: "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=800&h=800&fit=crop", alt: "Decadent layered dessert with cream and berries" },
-              { url: "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&h=800&fit=crop", alt: "Elegantly garnished appetizer plate" },
-              { url: "https://images.unsplash.com/photo-1484723091739-30a097e8f929?w=800&h=800&fit=crop", alt: "Stacked brunch pancakes with fresh fruit and syrup" },
+              { url: `${import.meta.env.BASE_URL}gallery/charcuterie-board-1.jpg`, alt: "Artisan charcuterie board with grapes, starfruit, and edible flowers" },
+              { url: `${import.meta.env.BASE_URL}gallery/herb-chicken.jpg`, alt: "Herb-crusted sliced chicken with rosemary and parsley" },
+              { url: `${import.meta.env.BASE_URL}gallery/empanadas.jpg`, alt: "Crispy empanadas with chimichurri and edible flowers" },
+              { url: `${import.meta.env.BASE_URL}gallery/catering-salad-spread.jpg`, alt: "Catering spread with fresh salad and crudité platter" },
+              { url: `${import.meta.env.BASE_URL}gallery/shrimp-grits.jpg`, alt: "Shrimp and grits with peppers and fresh herbs" },
+              { url: `${import.meta.env.BASE_URL}gallery/valentines-desserts.jpg`, alt: "Valentine's heart box with handmade chocolate desserts" },
+              { url: `${import.meta.env.BASE_URL}gallery/crab-cakes-1.jpg`, alt: "Golden crab cakes with microgreens and pansy garnish" },
+              { url: `${import.meta.env.BASE_URL}gallery/braised-beef-bites.jpg`, alt: "Braised beef bites in golden foil cups" },
+              { url: `${import.meta.env.BASE_URL}gallery/charcuterie-close-1.jpg`, alt: "Close-up of charcuterie with cheese, fruits, and flowers" },
+              { url: `${import.meta.env.BASE_URL}gallery/charcuterie-close-2.jpg`, alt: "Dragon fruit, grapes, and starfruit on wooden board" },
             ].map((img, i) => (
               <div key={i} className="aspect-square rounded-[40px] overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2">
-                <img src={img.url} alt={img.alt} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <img src={img.url} alt={img.alt} className="w-full h-full object-cover" />
               </div>
             ))}
           </div>
