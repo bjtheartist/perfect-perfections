@@ -204,7 +204,7 @@ export const DEPOSIT_RATE = 0.25;
 export const FAQ_ITEMS = [
   {
     question: 'How much does catering cost?',
-    answer: 'Packages start at $35 per person for drop-off service. Full-service catering with setup runs $275, with 2 servers $375, and with 3 servers $475 per person. Final pricing depends on guest count, menu selections, and event details.',
+    answer: 'Menu items are priced per half pan or full pan — perfect for feeding groups of any size. Full-service catering with setup and servers is also available. Final pricing depends on your menu selections, pan sizes, and event details. Reach out for a free estimate!',
   },
   {
     question: 'What types of events do you cater?',

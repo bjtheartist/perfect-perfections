@@ -135,7 +135,7 @@ function MenuSection({ menuItems, onBook, onEstimate }: { menuItems: CatalogMenu
         <div className="text-center mb-16 space-y-4">
           <span className="text-xs uppercase tracking-[0.3em] font-bold text-zinc-400">from our kitchen</span>
           <h2 className="font-caveat text-4xl">Our Menu</h2>
-          <p className="text-zinc-500 max-w-xl mx-auto">Fresh dishes made from scratch with layers of rich flavor. Prices shown are per tray for catering — perfect for feeding your guests.</p>
+          <p className="text-zinc-500 max-w-xl mx-auto">Fresh dishes made from scratch with layers of rich flavor. Prices shown are per half or full pan — perfect for feeding your guests.</p>
         </div>
 
         {/* Category tabs */}
@@ -514,9 +514,9 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
             </div>
           </div>
           <div className="space-y-4">
-            <h2 className="text-5xl font-playfair">Meet Nikida</h2>
+            <h2 className="text-5xl font-playfair">Meet Nikida Brock</h2>
             <p className="text-xl text-zinc-600 leading-relaxed">
-              What started as Sunday dinners and family cookouts became something bigger. Nikida brings generations of recipes, a whole lot of love, and the belief that good food brings people together. Based in Chicago's South Side, she's been feeding the community one unforgettable plate at a time.
+              With 7 years as a bakery buyer at Whole Foods Market, Nikida built a strong foundation in customer service, leadership, and an eye for quality. But her true passion — delighting people through food — led her to start Perfect Perfections Catering. Now pursuing a degree in hospitality management with a concentration in food and beverage, she's combining professional expertise with generations of family recipes. Based on Chicago's South Side, Nikida is on a mission to wow every guest, one unforgettable plate at a time.
             </p>
           </div>
         </div>
@@ -555,7 +555,7 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
               {
                 name: 'Monique',
                 label: 'Repeat Client',
-                quote: 'A loyal customer who keeps coming back and refers her entire family. Her aunt even reached out to pay a deposit directly.',
+                quote: 'Thank u so much. Everything was really good.',
               },
               {
                 name: 'Jade Allen',
