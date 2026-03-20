@@ -464,7 +464,7 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
       <nav className="sticky top-0 z-50 bg-white shadow-sm px-8 py-4 flex justify-between items-center rounded-b-3xl mx-4 mt-2">
         <div className="flex items-center space-x-4">
           <span className="text-2xl font-playfair font-medium">Perfect Perfections</span>
-          <span className="font-caveat text-lg text-zinc-400 hidden sm:inline">made with love</span>
+          <span className="font-caveat text-lg text-zinc-400 hidden sm:inline">taste and see that the Lord is good</span>
         </div>
         <div className="hidden md:flex space-x-8 text-sm font-medium">
           <a href="#services" className="hover:text-zinc-500 transition-colors">Services</a>
