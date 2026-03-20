@@ -5,43 +5,40 @@ import type { BookingRequest, CatalogData } from '../square/types';
 const makeCatalog = (overrides?: Partial<CatalogData>): CatalogData => ({
   packages: [
     {
-      id: 'pkg-gold',
-      name: 'Gold Package',
+      id: 'pkg-fullservice',
+      name: 'Full Service w/ Setup',
       description: '',
-      pricePerPersonCents: 5000,
-      minGuests: 10,
+      pricePerPersonCents: 27500, // $275 flat service fee
+      minGuests: 1,
       icon: 'utensils',
       includes: [],
-      variationId: 'var-gold',
+      variationId: 'var-fullservice',
     },
     {
-      id: 'pkg-silver',
-      name: 'Silver Package',
+      id: 'pkg-dropoff',
+      name: 'Drop-Off Service',
       description: '',
-      pricePerPersonCents: 3000,
-      minGuests: 5,
+      pricePerPersonCents: 5000, // $50 flat delivery fee
+      minGuests: 1,
       icon: 'truck',
       includes: [],
-      variationId: 'var-silver',
+      variationId: 'var-dropoff',
     },
   ],
   addons: [
     {
-      id: 'addon-drinks',
-      name: 'Open Bar',
-      priceCents: 1500,
-      pricingType: 'per-person',
-      variationId: 'var-drinks',
-    },
-    {
-      id: 'addon-setup',
-      name: 'Setup Fee',
+      id: 'addon-decor',
+      name: 'Setup & Basic Décor',
       priceCents: 20000,
       pricingType: 'flat',
-      variationId: 'var-setup',
+      variationId: 'var-decor',
     },
   ],
   dishes: [],
+  menuItems: [
+    { id: 'menu-chicken', name: 'Baked Chicken', description: '', priceCents: 8000, largePriceCents: 15000, category: 'Entrées' },
+    { id: 'menu-mac', name: 'Mac & Cheese', description: '', priceCents: 7500, largePriceCents: 13500, category: 'Sides' },
+  ],
   fetchedAt: Date.now(),
   ...overrides,
 });
@@ -54,54 +51,80 @@ const makeBooking = (overrides?: Partial<BookingRequest>): BookingRequest => ({
   eventDate: '2026-06-15',
   eventTime: '6:00 PM',
   guestCount: 20,
-  packageId: 'pkg-gold',
+  packageId: 'pkg-fullservice',
   addonIds: [],
   menuItemIds: [],
+  menuItemSizes: {},
   notes: '',
   ...overrides,
 });
 
 describe('buildQuoteFromCatalog', () => {
-  it('calculates package line item as price × guest count', () => {
+  it('adds service fee as flat line item', () => {
     const quote = buildQuoteFromCatalog(makeBooking(), makeCatalog());
 
-    expect(quote.lineItems[0].unitPriceCents).toBe(5000);
-    expect(quote.lineItems[0].quantity).toBe(20);
-    expect(quote.lineItems[0].totalCents).toBe(100_000);
-    expect(quote.subtotalCents).toBe(100_000);
+    expect(quote.lineItems[0].name).toBe('Full Service w/ Setup');
+    expect(quote.lineItems[0].quantity).toBe(1);
+    expect(quote.lineItems[0].totalCents).toBe(27500);
+    expect(quote.subtotalCents).toBe(27500);
   });
 
-  it('calculates per-person addon as price × guests', () => {
+  it('uses small pan price by default for menu items', () => {
     const quote = buildQuoteFromCatalog(
-      makeBooking({ addonIds: ['addon-drinks'] }),
+      makeBooking({ menuItemIds: ['menu-chicken'], menuItemSizes: { 'menu-chicken': 'small' } }),
       makeCatalog(),
     );
 
-    const addonItem = quote.lineItems.find((li) => li.name === 'Open Bar');
-    expect(addonItem).toBeDefined();
-    expect(addonItem!.quantity).toBe(20);
-    expect(addonItem!.unitPriceCents).toBe(1500);
-    expect(addonItem!.totalCents).toBe(30_000);
+    const chicken = quote.lineItems.find((li) => li.name.includes('Baked Chicken'));
+    expect(chicken).toBeDefined();
+    expect(chicken!.totalCents).toBe(8000);
+    expect(chicken!.name).toContain('Small Pan');
   });
 
-  it('calculates flat-rate addon as price × 1', () => {
+  it('uses large pan price when selected', () => {
     const quote = buildQuoteFromCatalog(
-      makeBooking({ addonIds: ['addon-setup'] }),
+      makeBooking({ menuItemIds: ['menu-chicken'], menuItemSizes: { 'menu-chicken': 'large' } }),
       makeCatalog(),
     );
 
-    const addonItem = quote.lineItems.find((li) => li.name === 'Setup Fee');
-    expect(addonItem).toBeDefined();
-    expect(addonItem!.quantity).toBe(1);
-    expect(addonItem!.totalCents).toBe(20_000);
+    const chicken = quote.lineItems.find((li) => li.name.includes('Baked Chicken'));
+    expect(chicken).toBeDefined();
+    expect(chicken!.totalCents).toBe(15000);
+    expect(chicken!.name).toContain('Large Pan');
+  });
+
+  it('calculates total with service fee + menu items + add-ons', () => {
+    const quote = buildQuoteFromCatalog(
+      makeBooking({
+        menuItemIds: ['menu-chicken', 'menu-mac'],
+        menuItemSizes: { 'menu-chicken': 'large', 'menu-mac': 'small' },
+        addonIds: ['addon-decor'],
+      }),
+      makeCatalog(),
+    );
+
+    // $275 service + $150 chicken (large) + $75 mac (small) + $200 decor = $700
+    expect(quote.subtotalCents).toBe(70000);
+  });
+
+  it('adds flat-rate addon as single line item', () => {
+    const quote = buildQuoteFromCatalog(
+      makeBooking({ addonIds: ['addon-decor'] }),
+      makeCatalog(),
+    );
+
+    const decor = quote.lineItems.find((li) => li.name === 'Setup & Basic Décor');
+    expect(decor).toBeDefined();
+    expect(decor!.quantity).toBe(1);
+    expect(decor!.totalCents).toBe(20000);
   });
 
   it('computes tax as Math.round(subtotal × 0.1025)', () => {
     const quote = buildQuoteFromCatalog(makeBooking(), makeCatalog());
-    const expectedTax = Math.round(100_000 * DEFAULT_TAX_RATE);
+    const expectedTax = Math.round(27500 * DEFAULT_TAX_RATE);
 
     expect(quote.taxCents).toBe(expectedTax);
-    expect(quote.totalCents).toBe(100_000 + expectedTax);
+    expect(quote.totalCents).toBe(27500 + expectedTax);
   });
 
   it('computes deposit as Math.round(total × 0.25)', () => {
@@ -111,26 +134,17 @@ describe('buildQuoteFromCatalog', () => {
     expect(quote.depositCents).toBe(expectedDeposit);
   });
 
-  it('returns subtotal 0 when guestCount is 0', () => {
+  it('skips service fee line item when package price is 0', () => {
     const quote = buildQuoteFromCatalog(
-      makeBooking({ guestCount: 0 }),
-      makeCatalog(),
+      makeBooking({ packageId: 'pkg-dropoff' }),
+      makeCatalog({
+        packages: [
+          { id: 'pkg-dropoff', name: 'Drop-Off', description: '', pricePerPersonCents: 0, minGuests: 1, icon: 'truck', includes: [], variationId: '' },
+        ],
+      }),
     );
 
+    expect(quote.lineItems.length).toBe(0);
     expect(quote.subtotalCents).toBe(0);
-    expect(quote.taxCents).toBe(0);
-    expect(quote.totalCents).toBe(0);
-    expect(quote.depositCents).toBe(0);
-  });
-
-  it('falls back to first package when packageId is missing', () => {
-    const quote = buildQuoteFromCatalog(
-      makeBooking({ packageId: 'nonexistent' }),
-      makeCatalog(),
-    );
-
-    // Should use Gold Package (first in array)
-    expect(quote.lineItems[0].name).toContain('Gold Package');
-    expect(quote.lineItems[0].unitPriceCents).toBe(5000);
   });
 });
