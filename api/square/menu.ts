@@ -93,8 +93,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (cateringCategories.has(categoryName)) continue;
       if (obj.customAttributeValues) continue; // skip our seeded items
 
-      const variation = itemData.variations?.[0];
-      const priceCents = Number(variation?.itemVariationData?.priceMoney?.amount ?? 0);
+      const variations = itemData.variations || [];
+
+      // Support two variations: Small Pan and Large Pan
+      let priceCents = 0;
+      let largePriceCents: number | undefined;
+
+      if (variations.length >= 2) {
+        // Look for named variations (Small Pan / Large Pan)
+        const smallVar = variations.find((v: any) => /small|half/i.test(v.itemVariationData?.name || ''));
+        const largeVar = variations.find((v: any) => /large|full/i.test(v.itemVariationData?.name || ''));
+        if (smallVar && largeVar) {
+          priceCents = Number(smallVar.itemVariationData?.priceMoney?.amount ?? 0);
+          largePriceCents = Number(largeVar.itemVariationData?.priceMoney?.amount ?? 0);
+        } else {
+          // Fallback: first = small, second = large
+          priceCents = Number(variations[0].itemVariationData?.priceMoney?.amount ?? 0);
+          largePriceCents = Number(variations[1].itemVariationData?.priceMoney?.amount ?? 0);
+        }
+      } else if (variations.length === 1) {
+        priceCents = Number(variations[0].itemVariationData?.priceMoney?.amount ?? 0);
+      }
+
       if (priceCents <= 0) continue;
 
       let imageUrl: string | undefined;
@@ -105,6 +125,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         name: (itemData.name || '').trim(),
         description: (itemData.descriptionPlaintext || itemData.description || '').trim(),
         priceCents,
+        largePriceCents,
         category: categoryName || 'Menu',
         imageUrl,
       });

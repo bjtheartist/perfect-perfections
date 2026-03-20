@@ -57,7 +57,8 @@ export interface CatalogMenuItem {
   id: string;
   name: string;
   description: string;
-  priceCents: number;
+  priceCents: number;        // small/half pan price
+  largePriceCents?: number;  // large/full pan price
   category: string;
   imageUrl?: string;
 }
@@ -82,6 +83,7 @@ export interface BookingRequest {
   packageId: string;
   addonIds: string[];
   menuItemIds: string[];
+  menuItemSizes?: Record<string, 'small' | 'large'>;
   notes: string;
 }
 

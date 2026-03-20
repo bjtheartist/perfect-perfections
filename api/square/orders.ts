@@ -122,45 +122,90 @@ async function buildLineItems(booking: any) {
 
   let pkg: any = null;
   const addonMap = new Map<string, any>();
+  const menuItemMap = new Map<string, any>();
 
   for (const obj of allObjects) {
     if (obj.type !== 'ITEM') continue;
     const catId = obj.itemData?.categories?.[0]?.id || '';
     const categoryName = categoryMap.get(catId) || '';
-    const variation = obj.itemData?.variations?.[0];
+    const variations = obj.itemData?.variations || [];
+    const variation = variations[0];
     const customAttrs = obj.customAttributeValues || {};
 
     if (categoryName === 'Catering Packages' && obj.id === booking.packageId) {
-      pkg = { variationId: variation?.id, pricePerPersonCents: Number(variation?.itemVariationData?.priceMoney?.amount ?? 0), name: obj.itemData?.name };
+      pkg = { variationId: variation?.id, priceCents: Number(variation?.itemVariationData?.priceMoney?.amount ?? 0), name: obj.itemData?.name };
     } else if (categoryName === 'Catering Packages' && !pkg) {
-      pkg = { variationId: variation?.id, pricePerPersonCents: Number(variation?.itemVariationData?.priceMoney?.amount ?? 0), name: obj.itemData?.name };
+      pkg = { variationId: variation?.id, priceCents: Number(variation?.itemVariationData?.priceMoney?.amount ?? 0), name: obj.itemData?.name };
     }
     if (categoryName === 'Add-Ons') {
       addonMap.set(obj.id, {
         variationId: variation?.id,
         priceCents: Number(variation?.itemVariationData?.priceMoney?.amount ?? 0),
-        pricingType: customAttrs.pp_pricing_type?.stringValue || 'flat',
         name: obj.itemData?.name,
+      });
+    }
+
+    // Build menu item map with small/large variation IDs
+    if (!['Catering Packages', 'Add-Ons', 'Signature Dishes'].includes(categoryName) && !customAttrs) {
+      const smallVar = variations.find((v: any) => /small|half/i.test(v.itemVariationData?.name || '')) || variations[0];
+      const largeVar = variations.find((v: any) => /large|full/i.test(v.itemVariationData?.name || '')) || variations[1];
+      menuItemMap.set(obj.id, {
+        name: obj.itemData?.name,
+        smallVariationId: smallVar?.id,
+        smallPriceCents: Number(smallVar?.itemVariationData?.priceMoney?.amount ?? 0),
+        largeVariationId: largeVar?.id,
+        largePriceCents: Number(largeVar?.itemVariationData?.priceMoney?.amount ?? 0),
       });
     }
   }
 
   const items: any[] = [];
-  if (pkg) {
+  const sizes = booking.menuItemSizes || {};
+
+  // Service fee (flat rate)
+  if (pkg && pkg.priceCents > 0) {
     items.push({
-      name: `${pkg.name} (${booking.guestCount} guests)`,
-      quantity: String(booking.guestCount),
+      name: pkg.name,
+      quantity: '1',
       catalogObjectId: pkg.variationId || undefined,
-      ...(!pkg.variationId && { basePriceMoney: { amount: BigInt(pkg.pricePerPersonCents), currency: 'USD' } }),
+      ...(!pkg.variationId && { basePriceMoney: { amount: BigInt(pkg.priceCents), currency: 'USD' } }),
     });
   }
 
+  // Selected menu items with pan size
+  for (const itemId of booking.menuItemIds || []) {
+    const menuItem = menuItemMap.get(itemId);
+    const size = sizes[itemId] || 'small';
+
+    if (menuItem) {
+      // Use Square catalog variation
+      const variationId = size === 'large' ? menuItem.largeVariationId : menuItem.smallVariationId;
+      const priceCents = size === 'large' ? menuItem.largePriceCents : menuItem.smallPriceCents;
+      const sizeLabel = size === 'large' ? 'Large Pan' : 'Small Pan';
+      items.push({
+        name: `${menuItem.name} (${sizeLabel})`,
+        quantity: '1',
+        catalogObjectId: variationId || undefined,
+        ...(!variationId && { basePriceMoney: { amount: BigInt(priceCents), currency: 'USD' } }),
+      });
+    } else {
+      // Fallback: use price from the booking request note (frontend calculated)
+      const sizeLabel = size === 'large' ? 'Large Pan' : 'Small Pan';
+      items.push({
+        name: `Menu Item (${sizeLabel})`,
+        quantity: '1',
+        basePriceMoney: { amount: BigInt(0), currency: 'USD' },
+      });
+    }
+  }
+
+  // Add-ons (flat fee)
   for (const addonId of booking.addonIds || []) {
     const addon = addonMap.get(addonId);
     if (!addon) continue;
     items.push({
       name: addon.name,
-      quantity: addon.pricingType === 'per-person' ? String(booking.guestCount) : '1',
+      quantity: '1',
       catalogObjectId: addon.variationId || undefined,
       ...(!addon.variationId && { basePriceMoney: { amount: BigInt(addon.priceCents), currency: 'USD' } }),
     });

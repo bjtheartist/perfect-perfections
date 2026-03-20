@@ -1,5 +1,7 @@
 import { AnimatePresence } from 'motion/react';
 import { useEffect, useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useBookingFlow } from './hooks/useBookingFlow';
 import { useCatalog } from './hooks/useCatalog';
 import { MockupC } from './components/MockupC';
@@ -36,6 +38,8 @@ export default function App() {
       <AnimatePresence>
         {booking.isOpen && <BookingModal flow={booking} catalog={catalog} isLive={isLive} />}
       </AnimatePresence>
+      <Analytics />
+      <SpeedInsights />
     </div>
   );
 }

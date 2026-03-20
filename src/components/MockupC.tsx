@@ -168,7 +168,7 @@ function MenuSection({ menuItems, onBook, onEstimate }: { menuItems: CatalogMenu
                   )}
                 </div>
                 <span className="text-sm font-medium text-zinc-500 whitespace-nowrap">
-                  ${(item.priceCents / 100).toFixed(0)}
+                  ${(item.priceCents / 100).toFixed(0)}{item.largePriceCents ? <> <span className="text-zinc-300 mx-0.5">/</span> ${(item.largePriceCents / 100).toFixed(0)}</> : ''}
                 </span>
               </div>
             ))}
@@ -176,7 +176,7 @@ function MenuSection({ menuItems, onBook, onEstimate }: { menuItems: CatalogMenu
         </div>
 
         <div className="text-center mt-12 space-y-4">
-          <p className="text-zinc-400 text-sm">Prices may vary based on guest count and event details</p>
+          <p className="text-zinc-400 text-sm">Small pan feeds 12–15 · Large pan feeds 35–40 · prices may vary based on event details</p>
           <div className="flex flex-wrap justify-center gap-4">
             <button onClick={() => { onBook(); trackEvent('cta_click_book', { location: 'menu' }); }} className="bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-zinc-800 transition-all">
               Book Your Event
@@ -308,6 +308,80 @@ function MealPrepSection({ onBook }: { onBook: () => void }) {
           <button onClick={onBook} className="bg-black text-white px-8 py-3 rounded-full font-medium hover:bg-zinc-800 transition-all">
             Get Started
           </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const FOOD_GALLERY = [
+  { url: 'gallery/charcuterie-board-1.jpg', alt: 'Artisan charcuterie board with grapes, starfruit, and edible flowers' },
+  { url: 'gallery/herb-chicken.jpg', alt: 'Herb-crusted sliced chicken with rosemary and parsley' },
+  { url: 'gallery/empanadas.jpg', alt: 'Crispy empanadas with chimichurri and edible flowers' },
+  { url: 'gallery/catering-salad-spread.jpg', alt: 'Catering spread with fresh salad and crudité platter' },
+  { url: 'gallery/shrimp-grits.jpg', alt: 'Shrimp and grits with peppers and fresh herbs' },
+  { url: 'gallery/valentines-desserts.jpg', alt: "Valentine's heart box with handmade chocolate desserts" },
+  { url: 'gallery/crab-cakes-1.jpg', alt: 'Golden crab cakes with microgreens and pansy garnish' },
+  { url: 'gallery/braised-beef-bites.jpg', alt: 'Braised beef bites in golden foil cups' },
+  { url: 'gallery/charcuterie-close-1.jpg', alt: 'Close-up of charcuterie with cheese, fruits, and flowers' },
+  { url: 'gallery/charcuterie-close-2.jpg', alt: 'Dragon fruit, grapes, and starfruit on wooden board' },
+];
+
+const DECOR_GALLERY = [
+  { url: 'gallery/decor-wedding.jpg', alt: 'Wedding balloon arch with sunflowers and "Happily Ever After" banner' },
+  { url: 'gallery/decor-40th-birthday.jpg', alt: '40th birthday marquee lights with teal and gold balloon garland' },
+  { url: 'gallery/decor-baby-shower.jpg', alt: 'Baby shower balloon arch with teddy bears and flower petals' },
+  { url: 'gallery/decor-shimmer-wall.jpg', alt: 'Silver shimmer wall backdrop with blue and silver balloons' },
+  { url: 'gallery/decor-pooh-shower.jpg', alt: 'Winnie the Pooh baby shower with throne chair and balloon arch' },
+  { url: 'gallery/decor-birthday-arch.jpg', alt: 'Pink and gold birthday balloon arch with neon Happy Birthday sign' },
+];
+
+function GallerySection() {
+  return (
+    <section className="py-32 px-8">
+      <div className="max-w-7xl mx-auto space-y-24">
+        {/* Food Gallery */}
+        <div>
+          <div className="text-center mb-16 space-y-2">
+            <span className="text-xs uppercase tracking-[0.3em] font-bold text-zinc-400">from our kitchen</span>
+            <h2 className="font-caveat text-4xl">a taste of what we do</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {FOOD_GALLERY.map((img, i) => (
+              <motion.div
+                key={img.url}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.05 }}
+                className="aspect-square rounded-[40px] overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2"
+              >
+                <img src={`${import.meta.env.BASE_URL}${img.url}`} alt={img.alt} className="w-full h-full object-cover" />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Event Decor Gallery */}
+        <div>
+          <div className="text-center mb-16 space-y-2">
+            <span className="text-xs uppercase tracking-[0.3em] font-bold text-zinc-400">event decor & design</span>
+            <h2 className="font-caveat text-4xl">we set the scene too</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            {DECOR_GALLERY.map((img, i) => (
+              <motion.div
+                key={img.url}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.05 }}
+                className="aspect-square rounded-[40px] overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2"
+              >
+                <img src={`${import.meta.env.BASE_URL}${img.url}`} alt={img.alt} className="w-full h-full object-cover" />
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -658,32 +732,7 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
       </section>
 
       {/* Gallery */}
-      <section className="py-32 px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16 space-y-2">
-            <span className="text-xs uppercase tracking-[0.3em] font-bold text-zinc-400">from our kitchen</span>
-            <h2 className="font-caveat text-4xl">a taste of what we do</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {[
-              { url: `${import.meta.env.BASE_URL}gallery/charcuterie-board-1.jpg`, alt: "Artisan charcuterie board with grapes, starfruit, and edible flowers" },
-              { url: `${import.meta.env.BASE_URL}gallery/herb-chicken.jpg`, alt: "Herb-crusted sliced chicken with rosemary and parsley" },
-              { url: `${import.meta.env.BASE_URL}gallery/empanadas.jpg`, alt: "Crispy empanadas with chimichurri and edible flowers" },
-              { url: `${import.meta.env.BASE_URL}gallery/catering-salad-spread.jpg`, alt: "Catering spread with fresh salad and crudité platter" },
-              { url: `${import.meta.env.BASE_URL}gallery/shrimp-grits.jpg`, alt: "Shrimp and grits with peppers and fresh herbs" },
-              { url: `${import.meta.env.BASE_URL}gallery/valentines-desserts.jpg`, alt: "Valentine's heart box with handmade chocolate desserts" },
-              { url: `${import.meta.env.BASE_URL}gallery/crab-cakes-1.jpg`, alt: "Golden crab cakes with microgreens and pansy garnish" },
-              { url: `${import.meta.env.BASE_URL}gallery/braised-beef-bites.jpg`, alt: "Braised beef bites in golden foil cups" },
-              { url: `${import.meta.env.BASE_URL}gallery/charcuterie-close-1.jpg`, alt: "Close-up of charcuterie with cheese, fruits, and flowers" },
-              { url: `${import.meta.env.BASE_URL}gallery/charcuterie-close-2.jpg`, alt: "Dragon fruit, grapes, and starfruit on wooden board" },
-            ].map((img, i) => (
-              <div key={i} className="aspect-square rounded-[40px] overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2">
-                <img src={img.url} alt={img.alt} className="w-full h-full object-cover" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <GallerySection />
 
       {/* Footer */}
       <footer className="bg-[#1A1A1A] text-white py-24 px-8 rounded-t-[60px]">

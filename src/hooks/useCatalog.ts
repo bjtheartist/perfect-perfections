@@ -33,8 +33,9 @@ function buildFallbackCatalog(): CatalogData {
   const menuItems = FALLBACK_MENU_ITEMS.map((item, i) => ({
     id: `fallback-menu-${i}`,
     name: item.name,
-    description: '',
-    priceCents: 0,
+    description: item.description || '',
+    priceCents: item.smallPriceCents,
+    largePriceCents: item.largePriceCents,
     category: item.category,
   }));
 

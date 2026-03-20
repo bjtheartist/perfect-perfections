@@ -16,6 +16,8 @@ export const useBookingFlow = (catalog: CatalogData) => {
   const [eventTime, setEventTime] = useState('12:00');
   const [addons, setAddons] = useState<string[]>([]);
   const [selectedMenuItems, setSelectedMenuItems] = useState<string[]>([]);
+  // Track pan size per menu item: { itemId: 'small' | 'large' }
+  const [menuItemSizes, setMenuItemSizes] = useState<Record<string, 'small' | 'large'>>({});
   const [notes, setNotes] = useState('');
 
   // Customer info (needed for Square)
@@ -45,6 +47,7 @@ export const useBookingFlow = (catalog: CatalogData) => {
     packageId: selectedPackage || catalog.packages[0]?.id || 'custom',
     addonIds: addons,
     menuItemIds: selectedMenuItems,
+    menuItemSizes,
     notes,
   });
 
@@ -55,13 +58,27 @@ export const useBookingFlow = (catalog: CatalogData) => {
   const open = (bookingMode: BookingMode = 'book') => { setIsOpen(true); setMode(bookingMode); setStep('package'); setSquareError(null); };
   const close = () => setIsOpen(false);
   const toggleAddon = (id: string) => setAddons(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  const toggleMenuItem = (id: string) => setSelectedMenuItems(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleMenuItem = (id: string) => {
+    setSelectedMenuItems(prev => {
+      if (prev.includes(id)) {
+        // Remove size tracking when deselecting
+        setMenuItemSizes(s => { const next = { ...s }; delete next[id]; return next; });
+        return prev.filter(x => x !== id);
+      }
+      // Default to small pan when selecting
+      setMenuItemSizes(s => ({ ...s, [id]: 'small' }));
+      return [...prev, id];
+    });
+  };
+  const setMenuItemSize = (id: string, size: 'small' | 'large') => {
+    setMenuItemSizes(prev => ({ ...prev, [id]: size }));
+  };
 
   return {
     isOpen, mode, step, selectedPackage, guests, eventType, eventDate, eventTime, addons, notes, pkg, total, deposit,
     customerName, customerEmail, customerPhone,
     squareQuote, fallbackQuote, squareOrderId, squareInvoiceId, squareInvoiceUrl, squareReceiptUrl, squareLoading, squareError,
-    selectedMenuItems, setMode, setStep, setSelectedPackage, setGuests, setEventType, setEventDate, setEventTime, setNotes, toggleAddon, toggleMenuItem,
+    selectedMenuItems, menuItemSizes, setMode, setStep, setSelectedPackage, setGuests, setEventType, setEventDate, setEventTime, setNotes, toggleAddon, toggleMenuItem, setMenuItemSize,
     setCustomerName, setCustomerEmail, setCustomerPhone,
     setSquareQuote, setSquareOrderId, setSquareInvoiceId, setSquareInvoiceUrl, setSquareReceiptUrl, setSquareLoading, setSquareError,
     buildBookingRequest,

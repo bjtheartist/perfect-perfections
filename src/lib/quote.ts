@@ -10,28 +10,44 @@ export function buildQuoteFromCatalog(
 ): Quote {
   const guestCount = Math.max(0, Math.round(booking.guestCount || 0));
   const pkg = catalog.packages.find((p) => p.id === booking.packageId) || catalog.packages[0];
+  const sizes = booking.menuItemSizes || {};
 
   const lineItems: Quote["lineItems"] = [];
 
-  if (pkg) {
-    const unitPriceCents = pkg.pricePerPersonCents;
+  // Service fee (flat rate for the package)
+  if (pkg && pkg.pricePerPersonCents > 0) {
     lineItems.push({
-      name: `${pkg.name} (${guestCount} guests)`,
-      quantity: guestCount,
-      unitPriceCents,
-      totalCents: unitPriceCents * guestCount,
+      name: pkg.name,
+      quantity: 1,
+      unitPriceCents: pkg.pricePerPersonCents,
+      totalCents: pkg.pricePerPersonCents,
     });
   }
 
+  // Selected menu items with pan size pricing
+  for (const itemId of booking.menuItemIds || []) {
+    const item = (catalog.menuItems || []).find((m) => m.id === itemId);
+    if (!item) continue;
+    const size = sizes[itemId] || 'small';
+    const priceCents = size === 'large' && item.largePriceCents ? item.largePriceCents : item.priceCents;
+    const sizeLabel = size === 'large' ? 'Large Pan' : 'Small Pan';
+    lineItems.push({
+      name: `${item.name} (${sizeLabel})`,
+      quantity: 1,
+      unitPriceCents: priceCents,
+      totalCents: priceCents,
+    });
+  }
+
+  // Add-ons
   for (const addonId of booking.addonIds || []) {
     const addon = catalog.addons.find((a) => a.id === addonId);
     if (!addon) continue;
-    const quantity = addon.pricingType === "per-person" ? guestCount : 1;
     lineItems.push({
       name: addon.name,
-      quantity,
+      quantity: 1,
       unitPriceCents: addon.priceCents,
-      totalCents: addon.priceCents * quantity,
+      totalCents: addon.priceCents,
     });
   }
 

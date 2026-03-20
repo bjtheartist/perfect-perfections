@@ -36,36 +36,106 @@ export const SIGNATURE_DISHES = [
 ];
 
 // --- Fallback Menu Items for Booking Selection ---
-export const FALLBACK_MENU_ITEMS = [
-  // Entrées
-  { name: 'Shrimp & Grits', category: 'Entrées' },
-  { name: 'Bacon-Wrapped Stuffed Chicken', category: 'Entrées' },
-  { name: 'Signature Soul Rolls', category: 'Entrées' },
-  { name: 'Baked Chicken', category: 'Entrées' },
-  { name: 'Fried Chicken Wings', category: 'Entrées' },
-  { name: 'BBQ Ribs', category: 'Entrées' },
-  { name: 'Smothered Pork Chops', category: 'Entrées' },
-  { name: 'Oxtails', category: 'Entrées' },
-  { name: 'Salmon Croquettes', category: 'Entrées' },
-  // Sides
-  { name: 'Mac & Cheese', category: 'Sides' },
-  { name: 'Collard Greens', category: 'Sides' },
-  { name: 'Candied Yams', category: 'Sides' },
-  { name: 'Dirty Rice', category: 'Sides' },
-  { name: 'Corn on the Cob', category: 'Sides' },
-  { name: 'Green Beans', category: 'Sides' },
-  { name: 'Potato Salad', category: 'Sides' },
-  { name: 'Coleslaw', category: 'Sides' },
+// Prices in cents: smallPriceCents = half/small pan, largePriceCents = full/large pan
+export interface FallbackMenuItem {
+  name: string;
+  category: string;
+  description?: string;
+  smallPriceCents: number;
+  largePriceCents: number;
+}
+
+export const FALLBACK_MENU_ITEMS: FallbackMenuItem[] = [
+  // Entrées (small pan 15-20 | large pan 30-35)
+  { name: 'Lamb Chops', category: 'Entrées', description: 'buttery garlic or jerk', smallPriceCents: 20000, largePriceCents: 38000 },
+  { name: 'Salmon', category: 'Entrées', description: 'garlic, lemon, teriyaki, jerk', smallPriceCents: 13500, largePriceCents: 24000 },
+  { name: 'Stuffed Salmon', category: 'Entrées', smallPriceCents: 15000, largePriceCents: 29000 },
+  { name: 'Stuffed Salmon + Shrimp', category: 'Entrées', smallPriceCents: 17500, largePriceCents: 34000 },
+  { name: 'Beef Short Ribs', category: 'Entrées', smallPriceCents: 20000, largePriceCents: 38000 },
+  { name: 'Stuffed Chicken Breast', category: 'Entrées', description: 'cheese, spinach & mushroom, bell pepper & onion', smallPriceCents: 12000, largePriceCents: 22000 },
+  { name: 'Baked Chicken', category: 'Entrées', description: 'jerk, lemon pepper, teriyaki, rosemary, garlic & herb', smallPriceCents: 8000, largePriceCents: 15000 },
+  { name: 'Oven Roasted Chicken', category: 'Entrées', description: 'jerk, lemon pepper, teriyaki, rosemary, garlic & herb', smallPriceCents: 8000, largePriceCents: 15000 },
+  { name: 'Cajun Chicken Pasta', category: 'Entrées', smallPriceCents: 10000, largePriceCents: 15000 },
+  { name: 'Jerk Chicken Alfredo', category: 'Entrées', smallPriceCents: 10000, largePriceCents: 15000 },
+  { name: 'Jerk Salmon Pasta', category: 'Entrées', smallPriceCents: 15000, largePriceCents: 28000 },
+
+  // Appetizers & Finger Foods
+  { name: 'Empanadas — Buffalo Chicken', category: 'Appetizers', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Empanadas — Philly Steak', category: 'Appetizers', smallPriceCents: 8000, largePriceCents: 15000 },
+  { name: 'Empanadas — Salmon', category: 'Appetizers', smallPriceCents: 8000, largePriceCents: 15000 },
+  { name: 'Empanadas — Southwest Chicken', category: 'Appetizers', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Empanadas — Jerk Chicken Rolls', category: 'Appetizers', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Mini Taco Cups — Steak', category: 'Appetizers', smallPriceCents: 7500, largePriceCents: 14000 },
+  { name: 'Mini Taco Cups — Chicken', category: 'Appetizers', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Mini Taco Cups — Ground Beef or Turkey', category: 'Appetizers', smallPriceCents: 5500, largePriceCents: 10000 },
+  { name: 'Sliders — Philly Steak', category: 'Appetizers', smallPriceCents: 8000, largePriceCents: 15000 },
+  { name: 'Sliders — Chicken', category: 'Appetizers', smallPriceCents: 7000, largePriceCents: 13000 },
+  { name: 'Sliders — Salmon', category: 'Appetizers', smallPriceCents: 8000, largePriceCents: 15000 },
+  { name: 'Pasta Salad — Veggie', category: 'Appetizers', smallPriceCents: 5000, largePriceCents: 9000 },
+  { name: 'Pasta Salad — Chicken', category: 'Appetizers', description: 'jerk or Greek', smallPriceCents: 6000, largePriceCents: 10000 },
+  { name: 'Pasta Salad — Seafood', category: 'Appetizers', smallPriceCents: 7000, largePriceCents: 13000 },
+  { name: 'Garden Salad', category: 'Appetizers', smallPriceCents: 4000, largePriceCents: 6000 },
+  { name: 'Caesar Salad', category: 'Appetizers', smallPriceCents: 4000, largePriceCents: 6000 },
+  { name: 'Caesar Salad w/ Chicken', category: 'Appetizers', smallPriceCents: 6000, largePriceCents: 8000 },
+  { name: 'Charcuterie Board', category: 'Appetizers', smallPriceCents: 8000, largePriceCents: 15000 },
+  { name: 'Fried or Garlic Butter Shrimp', category: 'Appetizers', smallPriceCents: 10000, largePriceCents: 18000 },
+  { name: 'Chicken Breast Bites', category: 'Appetizers', smallPriceCents: 8000, largePriceCents: 15000 },
+  { name: 'Salmon Bites', category: 'Appetizers', smallPriceCents: 10000, largePriceCents: 18000 },
+  { name: 'Meatballs', category: 'Appetizers', smallPriceCents: 6000, largePriceCents: 10000 },
+  { name: 'Rolls', category: 'Appetizers', smallPriceCents: 3500, largePriceCents: 5500 },
+  { name: 'Sub Sandwich or Wraps', category: 'Appetizers', smallPriceCents: 7500, largePriceCents: 7500 },
+  { name: 'Veggie Tray', category: 'Appetizers', smallPriceCents: 4000, largePriceCents: 4000 },
+  { name: 'Fruit Tray', category: 'Appetizers', smallPriceCents: 4500, largePriceCents: 4500 },
+
+  // Sides (small pan 10-15 | large pan 25-30)
+  { name: 'Asparagus', category: 'Sides', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Lasagna or Stuffed Shells', category: 'Sides', smallPriceCents: 8500, largePriceCents: 15000 },
+  { name: 'Salmon Stuffed Shells', category: 'Sides', smallPriceCents: 10000, largePriceCents: 18000 },
+  { name: 'Mostaccioli or Spaghetti', category: 'Sides', smallPriceCents: 7500, largePriceCents: 14000 },
+  { name: 'White Spaghetti', category: 'Sides', smallPriceCents: 8500, largePriceCents: 15000 },
+  { name: 'Red Beans & Rice', category: 'Sides', smallPriceCents: 7500, largePriceCents: 14000 },
+  { name: 'Dirty Rice', category: 'Sides', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Green Beans', category: 'Sides', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Creamed Corn', category: 'Sides', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Garlic Sautéed Spinach', category: 'Sides', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Broccoli', category: 'Sides', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Cabbage', category: 'Sides', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Garlic Mashed Potatoes', category: 'Sides', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Roasted Potatoes', category: 'Sides', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Pesto Potatoes', category: 'Sides', smallPriceCents: 7500, largePriceCents: 14000 },
+  { name: 'Garlic Parmesan Potatoes', category: 'Sides', smallPriceCents: 7500, largePriceCents: 14000 },
+  { name: 'Dressing', category: 'Sides', smallPriceCents: 7500, largePriceCents: 14000 },
+  { name: 'Seafood Dressing', category: 'Sides', smallPriceCents: 10000, largePriceCents: 18000 },
+  { name: 'Sweet Potatoes', category: 'Sides', smallPriceCents: 7500, largePriceCents: 12000 },
+  { name: 'Mac & Cheese', category: 'Sides', smallPriceCents: 7500, largePriceCents: 13500 },
+  { name: 'Garlic White Cheddar Mac', category: 'Sides', smallPriceCents: 7500, largePriceCents: 13500 },
+  { name: 'Mac & Cheese w/ Seafood', category: 'Sides', smallPriceCents: 12000, largePriceCents: 20000 },
+  { name: 'Pot Roast Mac & Cheese', category: 'Sides', smallPriceCents: 12000, largePriceCents: 20000 },
+
   // Breakfast & Brunch
-  { name: 'French Toast', category: 'Breakfast & Brunch' },
-  { name: 'Scrambled Eggs', category: 'Breakfast & Brunch' },
-  { name: 'Turkey Bacon & Sausage', category: 'Breakfast & Brunch' },
-  { name: 'Waffle Bar', category: 'Breakfast & Brunch' },
+  { name: 'Salmon Croquettes', category: 'Breakfast & Brunch', smallPriceCents: 7500, largePriceCents: 14000 },
+  { name: 'Shrimp Grits', category: 'Breakfast & Brunch', smallPriceCents: 8000, largePriceCents: 15000 },
+  { name: 'Chicken Alfredo Grits', category: 'Breakfast & Brunch', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Egg Casserole', category: 'Breakfast & Brunch', smallPriceCents: 5000, largePriceCents: 7500 },
+  { name: 'Breakfast Potatoes & Onions', category: 'Breakfast & Brunch', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Turkey Sausage & Peppers', category: 'Breakfast & Brunch', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Pork or Turkey Bacon', category: 'Breakfast & Brunch', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'French Toast Casserole', category: 'Breakfast & Brunch', smallPriceCents: 6000, largePriceCents: 10000 },
+  { name: 'Peach Cobbler Casserole', category: 'Breakfast & Brunch', smallPriceCents: 7500, largePriceCents: 12500 },
+  { name: 'Waffles', category: 'Breakfast & Brunch', smallPriceCents: 6000, largePriceCents: 10000 },
+  { name: 'Cinnamon Roll Waffles', category: 'Breakfast & Brunch', smallPriceCents: 7500, largePriceCents: 14000 },
+  { name: 'Breakfast Pastry Platter', category: 'Breakfast & Brunch', smallPriceCents: 8500, largePriceCents: 15000 },
+  { name: 'Smoke Salmon Bagel Tray', category: 'Breakfast & Brunch', smallPriceCents: 10000, largePriceCents: 18500 },
+  { name: 'Breakfast Sliders — Ham & Swiss w/ Eggs', category: 'Breakfast & Brunch', smallPriceCents: 7000, largePriceCents: 12000 },
+  { name: 'Breakfast Sliders — Philly Steak w/ Pesto Eggs', category: 'Breakfast & Brunch', smallPriceCents: 8500, largePriceCents: 15000 },
+
   // Desserts
-  { name: 'Southern Pecan Pie', category: 'Desserts' },
-  { name: 'Banana Pudding', category: 'Desserts' },
-  { name: 'Peach Cobbler', category: 'Desserts' },
-  { name: 'Gourmet Dipped Treats', category: 'Desserts' },
+  { name: 'Peach Cobbler Empanada', category: 'Desserts', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Caramel Apple Empanadas', category: 'Desserts', smallPriceCents: 6500, largePriceCents: 12000 },
+  { name: 'Mini Pastry Tray', category: 'Desserts', smallPriceCents: 6000, largePriceCents: 11000 },
+  { name: 'Cookie & Brownie Tray', category: 'Desserts', smallPriceCents: 6000, largePriceCents: 11000 },
+  { name: 'Sweet Potato Pie', category: 'Desserts', smallPriceCents: 2500, largePriceCents: 2500 },
+  { name: 'Pound Cake', category: 'Desserts', smallPriceCents: 4000, largePriceCents: 4000 },
 ];
 
 // --- Meal Prep Menu ---
@@ -156,11 +226,11 @@ export const CATERING_PACKAGES: CateringPackage[] = [
   {
     id: 'drop-off',
     name: 'Drop-Off Service',
-    description: 'Fresh platters and trays delivered to your venue, ready to serve.',
-    pricePerPerson: 35,
+    description: 'Fresh pans delivered to your venue, ready to serve. Flat delivery fee covers gas and transport.',
+    pricePerPerson: 50,
     minGuests: 1,
     icon: 'truck',
-    includes: ['Freshly prepared food', 'Delivery to your venue'],
+    includes: ['Freshly prepared food', 'Delivery to your venue', '$50 flat delivery fee'],
   },
   {
     id: 'full-service-setup',

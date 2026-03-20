@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useSquare } from '../lib/square/useSquare';
 import { isSquareConfigured } from '../lib/square/config';
+import { SquarePaymentForm } from './square/SquarePaymentForm';
 import type { CatalogData, IconName } from '../lib/square/types';
 import type { BookingStep, BookingMode } from '../hooks/useBookingFlow';
 import type { useBookingFlow } from '../hooks/useBookingFlow';
@@ -42,7 +43,7 @@ export const BookingModal = ({
   isLive: boolean;
 }) => {
   const square = useSquare();
-  const squareEnabled = isSquareConfigured() && isLive;
+  const squareEnabled = isSquareConfigured();
   const activeQuote = flow.squareQuote ?? flow.fallbackQuote;
   const totalAmount = activeQuote ? activeQuote.totalCents / 100 : flow.total;
   const depositAmount = activeQuote ? activeQuote.depositCents / 100 : flow.deposit;
@@ -234,10 +235,17 @@ export const BookingModal = ({
                           <p className="text-sm text-zinc-500 mt-1">{p.description}</p>
                         </div>
                       </div>
-                      <div className="text-right flex-shrink-0 ml-4">
-                        <span className="text-xl font-bold">${displayPrice}</span>
-                        <span className="text-xs text-zinc-400 block">/person</span>
-                      </div>
+                      {displayPrice > 0 && (
+                        <div className="text-right flex-shrink-0 ml-4">
+                          <span className="text-xl font-bold">${displayPrice}</span>
+                          <span className="text-xs text-zinc-400 block">service fee</span>
+                        </div>
+                      )}
+                      {displayPrice === 0 && (
+                        <div className="text-right flex-shrink-0 ml-4">
+                          <span className="text-sm font-bold text-zinc-500">Food cost only</span>
+                        </div>
+                      )}
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       {p.includes.map((item) => (
@@ -353,27 +361,60 @@ export const BookingModal = ({
                 return (
                   <div className="space-y-3">
                     <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">What Would You Like Served?</label>
-                    <p className="text-xs text-zinc-400">Select the dishes you'd like at your event — included with your package</p>
+                    <p className="text-xs text-zinc-400">Select your dishes — prices shown as small pan / large pan</p>
                     <div className="max-h-72 overflow-y-auto border-2 border-zinc-100 rounded-xl p-4 space-y-5">
                       {sortedCategories.map((cat) => (
                         <div key={cat}>
                           <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2">{cat}</p>
                           <div className="space-y-1.5">
                             {grouped[cat].map((item) => (
-                              <button
-                                key={item.id}
-                                onClick={() => flow.toggleMenuItem(item.id)}
-                                className={`w-full flex items-center p-2.5 rounded-lg border transition-all text-left ${
-                                  flow.selectedMenuItems.includes(item.id) ? 'border-black bg-zinc-50' : 'border-zinc-100 hover:border-zinc-300'
-                                }`}
-                              >
-                                <div className="flex items-center space-x-3 min-w-0">
-                                  <div className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center ${flow.selectedMenuItems.includes(item.id) ? 'border-black bg-black' : 'border-zinc-300'}`}>
-                                    {flow.selectedMenuItems.includes(item.id) && <Check className="w-2.5 h-2.5 text-white" />}
+                              <div key={item.id} className="space-y-1">
+                                <button
+                                  onClick={() => flow.toggleMenuItem(item.id)}
+                                  className={`w-full flex items-center justify-between p-2.5 rounded-lg border transition-all text-left ${
+                                    flow.selectedMenuItems.includes(item.id) ? 'border-black bg-zinc-50' : 'border-zinc-100 hover:border-zinc-300'
+                                  }`}
+                                >
+                                  <div className="flex items-center space-x-3 min-w-0">
+                                    <div className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center ${flow.selectedMenuItems.includes(item.id) ? 'border-black bg-black' : 'border-zinc-300'}`}>
+                                      {flow.selectedMenuItems.includes(item.id) && <Check className="w-2.5 h-2.5 text-white" />}
+                                    </div>
+                                    <span className="font-medium text-sm truncate">{item.name}</span>
                                   </div>
-                                  <span className="font-medium text-sm truncate">{item.name}</span>
-                                </div>
-                              </button>
+                                  {item.priceCents > 0 && (
+                                    <span className="text-xs text-zinc-400 flex-shrink-0 ml-2">
+                                      ${(item.priceCents / 100).toFixed(0)}{item.largePriceCents ? ` / $${(item.largePriceCents / 100).toFixed(0)}` : ''}
+                                    </span>
+                                  )}
+                                </button>
+                                {flow.selectedMenuItems.includes(item.id) && item.largePriceCents && item.largePriceCents !== item.priceCents && (
+                                  <div className="flex items-center space-x-2 ml-7">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); flow.setMenuItemSize(item.id, 'small'); }}
+                                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                                        flow.menuItemSizes[item.id] === 'small'
+                                          ? 'bg-black text-white'
+                                          : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
+                                      }`}
+                                    >
+                                      Small ${(item.priceCents / 100).toFixed(0)}
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); flow.setMenuItemSize(item.id, 'large'); }}
+                                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                                        flow.menuItemSizes[item.id] === 'large'
+                                          ? 'bg-black text-white'
+                                          : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
+                                      }`}
+                                    >
+                                      Large ${(item.largePriceCents / 100).toFixed(0)}
+                                    </button>
+                                    <span className="text-[10px] text-zinc-400 ml-1">
+                                      {flow.menuItemSizes[item.id] === 'large' ? 'feeds 35-40' : 'feeds 12-15'}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -403,7 +444,7 @@ export const BookingModal = ({
                       <span className="font-medium">{addon.name}</span>
                     </div>
                     <span className="text-sm text-zinc-500">
-                      +${(addon.priceCents / 100).toFixed(0)}{addon.pricingType === 'per-person' ? '/person' : ' flat'}
+                      +${(addon.priceCents / 100).toFixed(0)} {addon.pricingType === 'flat' ? 'flat' : 'per pan'}
                     </span>
                   </button>
                 ))}
@@ -438,12 +479,9 @@ export const BookingModal = ({
             <div className="space-y-8">
               <div className="bg-zinc-50 rounded-2xl p-6 space-y-4">
                 {activeQuote.lineItems.map((item, i) => (
-                  <div key={i} className={`flex justify-between text-sm ${i === 0 ? 'pb-4 border-b border-zinc-200' : ''}`}>
-                    <div>
-                      <p className={i === 0 ? 'font-bold' : 'text-zinc-600'}>{item.name}</p>
-                      {i === 0 && <p className="text-sm text-zinc-500">${(item.unitPriceCents / 100).toFixed(2)}/person × {item.quantity} guests</p>}
-                    </div>
-                    <span className={i === 0 ? 'text-xl font-bold' : 'font-medium'}>${(item.totalCents / 100).toLocaleString()}</span>
+                  <div key={i} className="flex justify-between text-sm">
+                    <p className="text-zinc-600">{item.name}</p>
+                    <span className="font-medium">${(item.totalCents / 100).toLocaleString()}</span>
                   </div>
                 ))}
                 <div className="flex justify-between text-sm text-zinc-500 pt-2 border-t border-zinc-100">
@@ -481,7 +519,7 @@ export const BookingModal = ({
                 </div>
                 <div className="flex items-center space-x-2 text-zinc-600">
                   <Utensils className="w-4 h-4" />
-                  <span>{flow.guests} guests · {flow.pkg?.name || activeQuote.lineItems[0]?.name || 'Catering'}</span>
+                  <span>{flow.guests} guests · {flow.pkg?.name || 'Catering'}</span>
                 </div>
                 {flow.selectedMenuItems.length > 0 && (
                   <div className="flex items-start space-x-2 text-zinc-600">
@@ -553,7 +591,7 @@ export const BookingModal = ({
                 <p className="text-sm text-zinc-500">25% deposit to secure {flow.eventDate}</p>
               </div>
 
-              {/* Square Invoice Link (real) */}
+              {/* Square Invoice Link — if invoice was created, show link + embedded pay */}
               {flow.squareInvoiceUrl ? (
                 <div className="space-y-6">
                   <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 space-y-4">
@@ -562,13 +600,49 @@ export const BookingModal = ({
                         <Check className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <p className="font-bold text-emerald-900">Invoice Created in Square!</p>
+                        <p className="font-bold text-emerald-900">Invoice Created!</p>
                         <p className="text-sm text-emerald-700">Order #{flow.squareOrderId?.slice(-8)}</p>
                       </div>
                     </div>
                     <p className="text-sm text-emerald-800">
-                      An invoice has been sent to <strong>{flow.customerEmail}</strong> with your deposit amount and payment link.
+                      An invoice has been sent to <strong>{flow.customerEmail}</strong>.
                     </p>
+                  </div>
+
+                  {/* Embedded Square Payment Form for deposit */}
+                  {squareEnabled ? (
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 text-center">Pay deposit now</p>
+                      <SquarePaymentForm
+                        amountCents={Math.round(depositAmount * 100)}
+                        processing={flow.squareLoading}
+                        onTokenize={async (token) => {
+                          flow.setSquareLoading(true);
+                          flow.setSquareError(null);
+                          try {
+                            const result = await square.processPayment({
+                              sourceId: token,
+                              amountCents: Math.round(depositAmount * 100),
+                              orderId: flow.squareOrderId || '',
+                              customerEmail: flow.customerEmail,
+                              note: `Deposit for ${flow.eventType} on ${flow.eventDate}`,
+                            });
+                            if (result.success && result.data) {
+                              flow.setSquareReceiptUrl(result.data.receiptUrl || null);
+                              flow.setStep('confirmed');
+                            } else {
+                              flow.setSquareError(result.error || 'Payment failed');
+                            }
+                          } catch (err: any) {
+                            flow.setSquareError(err.message);
+                          } finally {
+                            flow.setSquareLoading(false);
+                          }
+                        }}
+                        onError={(err) => flow.setSquareError(err)}
+                      />
+                    </div>
+                  ) : (
                     <a
                       href={flow.squareInvoiceUrl}
                       target="_blank"
@@ -576,49 +650,83 @@ export const BookingModal = ({
                       className="flex items-center justify-center space-x-2 w-full bg-emerald-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-emerald-700 transition-colors"
                     >
                       <CreditCard className="w-5 h-5" />
-                      <span>Pay Deposit Now</span>
+                      <span>Pay Deposit via Invoice</span>
                       <ExternalLink className="w-4 h-4" />
                     </a>
-                    <p className="text-xs text-emerald-600 text-center">Opens Square's secure payment page</p>
-                  </div>
+                  )}
 
                   <button
                     onClick={handleCompleteDeposit}
-                    className="w-full bg-black text-white py-4 rounded-xl font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors"
+                    className="w-full text-zinc-500 py-3 text-sm hover:text-black transition-colors"
                   >
-                    Continue to Confirmation →
+                    I'll pay later → Continue to Confirmation
                   </button>
                 </div>
               ) : (
-                /* Fallback: simulated payment form when Square isn't connected */
+                /* No invoice yet — show embedded Square payment directly */
                 <div className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Card Number</label>
-                      <input type="text" placeholder="4242 4242 4242 4242" maxLength={19} className="w-full border-2 border-zinc-200 rounded-xl p-4 outline-none focus:border-black transition-colors font-mono" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Expiry</label>
-                        <input type="text" placeholder="MM/YY" maxLength={5} className="w-full border-2 border-zinc-200 rounded-xl p-4 outline-none focus:border-black transition-colors font-mono" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">CVC</label>
-                        <input type="text" placeholder="123" maxLength={4} className="w-full border-2 border-zinc-200 rounded-xl p-4 outline-none focus:border-black transition-colors font-mono" />
-                      </div>
-                    </div>
-                  </div>
+                  {squareEnabled ? (
+                    <>
+                      <SquarePaymentForm
+                        amountCents={Math.round(depositAmount * 100)}
+                        processing={flow.squareLoading}
+                        onTokenize={async (token) => {
+                          flow.setSquareLoading(true);
+                          flow.setSquareError(null);
+                          try {
+                            // Create order first if we don't have one
+                            let orderId = flow.squareOrderId;
+                            if (!orderId) {
+                              const orderResult = await square.createOrder(flow.buildBookingRequest());
+                              if (orderResult.success && orderResult.data) {
+                                orderId = orderResult.data.orderId;
+                                flow.setSquareOrderId(orderId);
+                              } else {
+                                flow.setSquareError(orderResult.error || 'Failed to create order');
+                                return;
+                              }
+                            }
 
-                  <div className="bg-zinc-50 rounded-xl p-4 flex items-center space-x-3 text-sm text-zinc-500">
-                    <CreditCard className="w-5 h-5 flex-shrink-0" />
-                    <span>Demo mode — no payment processed. Connect Square to enable real payments.</span>
-                  </div>
+                            const result = await square.processPayment({
+                              sourceId: token,
+                              amountCents: Math.round(depositAmount * 100),
+                              orderId: orderId || '',
+                              customerEmail: flow.customerEmail,
+                              note: `Deposit for ${flow.eventType} on ${flow.eventDate}`,
+                            });
+                            if (result.success && result.data) {
+                              flow.setSquareReceiptUrl(result.data.receiptUrl || null);
+                              flow.setStep('confirmed');
+                            } else {
+                              flow.setSquareError(result.error || 'Payment failed');
+                            }
+                          } catch (err: any) {
+                            flow.setSquareError(err.message);
+                          } finally {
+                            flow.setSquareLoading(false);
+                          }
+                        }}
+                        onError={(err) => flow.setSquareError(err)}
+                      />
+                      <p className="text-xs text-zinc-400 text-center">Secure payment powered by Square</p>
+                    </>
+                  ) : (
+                    <div className="space-y-4 text-center">
+                      <div className="bg-amber-50 rounded-2xl p-6 space-y-2">
+                        <p className="text-sm font-bold text-amber-800">Payments coming soon</p>
+                        <p className="text-xs text-amber-600">Contact Nikida directly to arrange payment for your event.</p>
+                      </div>
+                      <a href="tel:+17739366416" className="inline-flex items-center space-x-2 text-sm font-medium text-black hover:text-zinc-600 transition-colors">
+                        <span>Call (773) 936-6416</span>
+                      </a>
+                    </div>
+                  )}
 
                   <button
                     onClick={handleCompleteDeposit}
-                    className="w-full bg-black text-white py-5 rounded-xl font-bold text-lg uppercase tracking-widest hover:bg-zinc-800 transition-colors"
+                    className="w-full text-zinc-500 py-3 text-sm hover:text-black transition-colors"
                   >
-                    Complete Deposit · ${depositAmount.toLocaleString()}
+                    Skip payment → Continue to Confirmation
                   </button>
                 </div>
               )}
