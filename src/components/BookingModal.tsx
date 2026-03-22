@@ -43,7 +43,7 @@ export const BookingModal = ({
   isLive: boolean;
 }) => {
   const square = useSquare();
-  const squareEnabled = isSquareConfigured();
+  const squareEnabled = isSquareConfigured() && isLive;
   const activeQuote = flow.squareQuote ?? flow.fallbackQuote;
   const totalAmount = activeQuote ? activeQuote.totalCents / 100 : flow.total;
   const depositAmount = activeQuote ? activeQuote.depositCents / 100 : flow.deposit;

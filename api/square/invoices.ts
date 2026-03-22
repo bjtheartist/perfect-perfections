@@ -1,67 +1,87 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { randomUUID } from 'crypto';
-import { SquareClient, SquareEnvironment } from 'square';
-
-function getClient() {
-  return new SquareClient({
-    token: process.env.SQUARE_ACCESS_TOKEN,
-    environment: process.env.SQUARE_ENVIRONMENT === 'production'
-      ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
-  });
-}
+import {
+  createIdempotencyKey,
+  createSquareClient,
+  findCustomerByEmail,
+  getErrorMessage,
+  getOrderTotalCents,
+  getSquareLocationId,
+  handleCors,
+} from '../_lib/square';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (handleCors(req, res, ['GET', 'POST'])) return;
 
   if (req.method === 'GET') return getInvoice(req, res);
   if (req.method === 'POST') return createInvoice(req, res);
-  return res.status(405).json({ error: 'Method not allowed' });
+  return res.status(405).json({ success: false, error: 'Method not allowed' });
 }
 
 async function getInvoice(req: VercelRequest, res: VercelResponse) {
   const { invoiceId } = req.query;
-  if (!invoiceId) return res.status(400).json({ error: 'invoiceId query param required' });
+  if (!invoiceId) return res.status(400).json({ success: false, error: 'invoiceId query param required' });
 
   try {
-    const result = await getClient().invoices.get({ invoiceId: invoiceId as string });
+    const result = await createSquareClient().invoices.get({ invoiceId: invoiceId as string });
     const invoice = result.invoice;
     res.json({ success: true, data: { invoiceId: invoice?.id, status: invoice?.status, publicUrl: invoice?.publicUrl } });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Square Invoice Status Error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: getErrorMessage(error) });
   }
 }
 
 async function createInvoice(req: VercelRequest, res: VercelResponse) {
-  const { orderId, customerEmail, depositCents, dueDate } = req.body;
-  const locationId = process.env.SQUARE_LOCATION_ID || '';
-  const client = getClient();
+  const { orderId, customerEmail, depositCents, dueDate } = req.body || {};
+  const normalizedOrderId = typeof orderId === 'string' ? orderId.trim() : '';
+  const normalizedEmail = typeof customerEmail === 'string' ? customerEmail.trim().toLowerCase() : '';
+  const normalizedDepositCents = Math.round(Number(depositCents) || 0);
+  const normalizedDueDate = typeof dueDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dueDate)
+    ? dueDate
+    : undefined;
+
+  if (!normalizedOrderId) {
+    return res.status(400).json({ success: false, error: 'orderId is required' });
+  }
+  if (!normalizedEmail) {
+    return res.status(400).json({ success: false, error: 'customerEmail is required' });
+  }
+  if (normalizedDepositCents <= 0) {
+    return res.status(400).json({ success: false, error: 'depositCents must be greater than zero' });
+  }
+
+  const locationId = getSquareLocationId();
+  const client = createSquareClient();
 
   try {
-    let customerId: string | undefined;
-    try {
-      const searchResult = await client.customers.search({
-        query: { filter: { emailAddress: { exact: customerEmail } } },
-      });
-      customerId = searchResult.customers?.[0]?.id;
-    } catch (searchErr: any) {
-      console.error('Customer search error:', searchErr);
+    const orderResult = await client.orders.get({ orderId: normalizedOrderId });
+    const order = orderResult.order;
+    const orderTotalCents = await getOrderTotalCents(client, normalizedOrderId);
+    if (orderTotalCents <= 0) {
+      return res.status(400).json({ success: false, error: 'Order total is invalid' });
     }
-    if (!customerId) return res.status(400).json({ success: false, error: `Customer not found for ${customerEmail}` });
+    if (normalizedDepositCents > orderTotalCents) {
+      return res.status(400).json({ success: false, error: 'Deposit cannot exceed order total' });
+    }
+
+    let customerId = order?.customerId;
+    if (!customerId) {
+      customerId = await findCustomerByEmail(client, normalizedEmail);
+    }
+    if (!customerId) {
+      return res.status(400).json({ success: false, error: `Customer not found for ${normalizedEmail}` });
+    }
 
     const invoiceResult = await client.invoices.create({
       invoice: {
         locationId,
-        orderId,
+        orderId: normalizedOrderId,
         primaryRecipient: { customerId },
         paymentRequests: [
           {
             requestType: 'DEPOSIT',
-            dueDate: dueDate || new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
-            fixedAmountRequestedMoney: { amount: BigInt(depositCents), currency: 'USD' },
+            dueDate: normalizedDueDate || new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
+            fixedAmountRequestedMoney: { amount: BigInt(normalizedDepositCents), currency: 'USD' },
           },
           {
             requestType: 'BALANCE',
@@ -73,7 +93,11 @@ async function createInvoice(req: VercelRequest, res: VercelResponse) {
         description: 'Thank you for choosing Perfect Perfections! This invoice includes your 25% deposit and remaining balance.',
         acceptedPaymentMethods: { card: true, squareGiftCard: false, bankAccount: true },
       },
-      idempotencyKey: randomUUID(),
+      idempotencyKey: createIdempotencyKey('invoice', {
+        orderId: normalizedOrderId,
+        customerId,
+        depositCents: normalizedDepositCents,
+      }),
     });
 
     const invoice = invoiceResult.invoice;
@@ -90,8 +114,8 @@ async function createInvoice(req: VercelRequest, res: VercelResponse) {
     }
 
     res.json({ success: true, data: { invoiceId: invoice?.id, status: finalStatus, publicUrl } });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Square Invoice Error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: getErrorMessage(error) });
   }
 }

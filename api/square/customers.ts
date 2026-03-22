@@ -1,34 +1,25 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { randomUUID } from 'crypto';
-import { SquareClient, SquareEnvironment } from 'square';
-
-function getClient() {
-  return new SquareClient({
-    token: process.env.SQUARE_ACCESS_TOKEN,
-    environment: process.env.SQUARE_ENVIRONMENT === 'production'
-      ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
-  });
-}
+import { createSquareClient, getErrorMessage, handleCors, requireMethods, upsertCustomer } from '../_lib/square';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (handleCors(req, res, ['POST'])) return;
+  if (!requireMethods(req, res, ['POST'])) return;
 
   const { name, email, phone } = req.body;
-  try {
-    const [givenName, ...rest] = (name || '').split(' ');
-    const result = await getClient().customers.create({
-      idempotencyKey: randomUUID(),
-      givenName,
-      familyName: rest.join(' '),
-      emailAddress: email,
-      phoneNumber: phone,
-    });
+  if (!name || !email) {
+    return res.status(400).json({ success: false, error: 'name and email are required' });
+  }
 
-    const customer = result.customer;
+  try {
+    const client = createSquareClient();
+    const customerId = await upsertCustomer(client, {
+      customerName: String(name).trim(),
+      customerEmail: String(email).trim().toLowerCase(),
+      customerPhone: typeof phone === 'string' ? phone.trim() : '',
+    });
+    const result = customerId ? await client.customers.get({ customerId }) : undefined;
+
+    const customer = result?.customer;
     res.json({
       success: true,
       data: {
@@ -38,8 +29,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         phone: customer?.phoneNumber,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Square Customer Error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: getErrorMessage(error) });
   }
 }

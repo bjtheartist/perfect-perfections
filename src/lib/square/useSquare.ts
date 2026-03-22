@@ -20,11 +20,31 @@ const API_BASE = '/api';
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<ApiResponse<T>> {
   try {
+    const headers = new Headers(options?.headers);
+    if (options?.body && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+
     const res = await fetch(`${API_BASE}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
       ...options,
+      headers,
     });
-    return await res.json();
+
+    const contentType = res.headers.get('content-type') || '';
+    const payload = contentType.includes('application/json') ? await res.json() : null;
+
+    if (!res.ok) {
+      return {
+        success: false,
+        error: payload?.error || `Request failed (${res.status})`,
+      };
+    }
+
+    if (!payload || typeof payload.success !== 'boolean') {
+      return { success: false, error: 'Invalid API response' };
+    }
+
+    return payload as ApiResponse<T>;
   } catch (error: any) {
     return { success: false, error: error.message || 'Network error' };
   }

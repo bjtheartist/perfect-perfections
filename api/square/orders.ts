@@ -1,56 +1,50 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { randomUUID } from 'crypto';
-import { SquareClient, SquareEnvironment } from 'square';
-
-function getClient() {
-  return new SquareClient({
-    token: process.env.SQUARE_ACCESS_TOKEN,
-    environment: process.env.SQUARE_ENVIRONMENT === 'production'
-      ? SquareEnvironment.Production : SquareEnvironment.Sandbox,
-  });
-}
+import type { BookingRequest, CatalogData } from '../../src/lib/square/types';
+import { buildQuoteFromCatalog } from '../../src/lib/quote';
+import {
+  createIdempotencyKey,
+  createSquareClient,
+  getCatalogData,
+  getErrorMessage,
+  getSquareLocationId,
+  handleCors,
+  normalizeBooking,
+  requireMethods,
+  upsertCustomer,
+  validateOrderRequest,
+} from '../_lib/square';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (handleCors(req, res, ['POST'])) return;
+  if (!requireMethods(req, res, ['POST'])) return;
 
-  const booking = req.body;
-  const locationId = process.env.SQUARE_LOCATION_ID || '';
+  const booking = normalizeBooking(req.body);
+  const validationError = validateOrderRequest(booking);
+  if (validationError) {
+    return res.status(400).json({ success: false, error: validationError });
+  }
 
   try {
-    const client = getClient();
+    const client = createSquareClient();
+    const locationId = getSquareLocationId();
+    const customerId = await upsertCustomer(client, booking);
+    const catalog = await getCatalogData(client);
+    const quote = buildQuoteFromCatalog(booking, catalog);
+    const lineItems = buildLineItems(booking, catalog);
 
-    // Find or create customer
-    let customerId: string | undefined;
-    try {
-      const searchResult = await client.customers.search({
-        query: { filter: { emailAddress: { exact: booking.customerEmail } } },
-      });
-      customerId = searchResult.customers?.[0]?.id;
-    } catch {}
-
-    if (!customerId) {
-      const [givenName, ...rest] = booking.customerName.split(' ');
-      const createResult = await client.customers.create({
-        idempotencyKey: randomUUID(),
-        givenName,
-        familyName: rest.join(' '),
-        emailAddress: booking.customerEmail,
-        phoneNumber: booking.customerPhone,
-      });
-      customerId = createResult.customer?.id;
+    if (quote.totalCents <= 0) {
+      return res.status(400).json({ success: false, error: 'Order must include at least one priced item' });
     }
-
-    const lineItems = await buildLineItems(booking);
 
     const orderResult = await client.orders.create({
       order: {
         locationId,
         customerId,
-        referenceId: `PP-${Date.now()}`,
+        referenceId: createIdempotencyKey('pp', {
+          customerEmail: booking.customerEmail,
+          eventDate: booking.eventDate,
+          eventTime: booking.eventTime,
+        }).slice(0, 40),
         lineItems,
         taxes: [{ name: 'Chicago Sales Tax', percentage: '10.25', scope: 'ORDER' }],
         fulfillments: [{
@@ -62,7 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               emailAddress: booking.customerEmail,
               phoneNumber: booking.customerPhone,
             },
-            pickupAt: `${booking.eventDate}T${convertTo24Hr(booking.eventTime)}:00Z`,
+            pickupAt: toChicagoPickupAt(booking.eventDate, booking.eventTime),
             note: `${booking.eventType} event — ${booking.guestCount} guests`,
           },
         }],
@@ -76,7 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }).filter(([, v]) => v !== '' && v !== undefined)
         ),
       },
-      idempotencyKey: randomUUID(),
+      idempotencyKey: createIdempotencyKey('order', booking),
     });
 
     const order = orderResult.order;
@@ -93,9 +87,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         depositCents,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Square Order Error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: getErrorMessage(error) });
   }
 }
 
@@ -109,105 +103,78 @@ function convertTo24Hr(time: string): string {
   return `${String(hour).padStart(2, '0')}:${m}`;
 }
 
-async function buildLineItems(booking: any) {
-  const allObjects: any[] = [];
-  for await (const obj of await getClient().catalog.list({ types: 'ITEM,CATEGORY' }) as any) {
-    allObjects.push(obj);
-  }
+function toChicagoPickupAt(eventDate: string, eventTime: string): string {
+  const offsetFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Chicago',
+    timeZoneName: 'shortOffset',
+  });
+  const offsetPart = offsetFormatter
+    .formatToParts(new Date(`${eventDate}T12:00:00Z`))
+    .find((part) => part.type === 'timeZoneName')
+    ?.value
+    .replace('GMT', '') || '-06:00';
 
-  const categoryMap = new Map<string, string>();
-  for (const obj of allObjects) {
-    if (obj.type === 'CATEGORY') categoryMap.set(obj.id, obj.categoryData?.name || '');
-  }
+  const normalizedOffset = /^[-+]\d{1,2}$/.test(offsetPart)
+    ? `${offsetPart}:00`
+    : offsetPart;
 
-  let pkg: any = null;
-  const addonMap = new Map<string, any>();
-  const menuItemMap = new Map<string, any>();
+  return `${eventDate}T${convertTo24Hr(eventTime)}:00${normalizedOffset}`;
+}
 
-  for (const obj of allObjects) {
-    if (obj.type !== 'ITEM') continue;
-    const catId = obj.itemData?.categories?.[0]?.id || '';
-    const categoryName = categoryMap.get(catId) || '';
-    const variations = obj.itemData?.variations || [];
-    const variation = variations[0];
-    const customAttrs = obj.customAttributeValues || {};
-
-    if (categoryName === 'Catering Packages' && obj.id === booking.packageId) {
-      pkg = { variationId: variation?.id, priceCents: Number(variation?.itemVariationData?.priceMoney?.amount ?? 0), name: obj.itemData?.name };
-    } else if (categoryName === 'Catering Packages' && !pkg) {
-      pkg = { variationId: variation?.id, priceCents: Number(variation?.itemVariationData?.priceMoney?.amount ?? 0), name: obj.itemData?.name };
-    }
-    if (categoryName === 'Add-Ons') {
-      addonMap.set(obj.id, {
-        variationId: variation?.id,
-        priceCents: Number(variation?.itemVariationData?.priceMoney?.amount ?? 0),
-        name: obj.itemData?.name,
-      });
-    }
-
-    // Build menu item map with small/large variation IDs
-    if (!['Catering Packages', 'Add-Ons', 'Signature Dishes'].includes(categoryName) && !customAttrs) {
-      const smallVar = variations.find((v: any) => /small|half/i.test(v.itemVariationData?.name || '')) || variations[0];
-      const largeVar = variations.find((v: any) => /large|full/i.test(v.itemVariationData?.name || '')) || variations[1];
-      menuItemMap.set(obj.id, {
-        name: obj.itemData?.name,
-        smallVariationId: smallVar?.id,
-        smallPriceCents: Number(smallVar?.itemVariationData?.priceMoney?.amount ?? 0),
-        largeVariationId: largeVar?.id,
-        largePriceCents: Number(largeVar?.itemVariationData?.priceMoney?.amount ?? 0),
-      });
-    }
-  }
-
-  const items: any[] = [];
+function buildLineItems(booking: BookingRequest, catalog: CatalogData) {
+  const pkg = catalog.packages.find((entry) => entry.id === booking.packageId) || catalog.packages[0];
   const sizes = booking.menuItemSizes || {};
+  const items: any[] = [];
 
-  // Service fee (flat rate)
-  if (pkg && pkg.priceCents > 0) {
+  if (pkg?.pricePerPersonCents) {
     items.push({
       name: pkg.name,
       quantity: '1',
       catalogObjectId: pkg.variationId || undefined,
-      ...(!pkg.variationId && { basePriceMoney: { amount: BigInt(pkg.priceCents), currency: 'USD' } }),
+      ...(!pkg.variationId && {
+        basePriceMoney: { amount: BigInt(pkg.pricePerPersonCents), currency: 'USD' },
+      }),
     });
   }
 
-  // Selected menu items with pan size
   for (const itemId of booking.menuItemIds || []) {
-    const menuItem = menuItemMap.get(itemId);
-    const size = sizes[itemId] || 'small';
-
-    if (menuItem) {
-      // Use Square catalog variation
-      const variationId = size === 'large' ? menuItem.largeVariationId : menuItem.smallVariationId;
-      const priceCents = size === 'large' ? menuItem.largePriceCents : menuItem.smallPriceCents;
-      const sizeLabel = size === 'large' ? 'Large Pan' : 'Small Pan';
-      items.push({
-        name: `${menuItem.name} (${sizeLabel})`,
-        quantity: '1',
-        catalogObjectId: variationId || undefined,
-        ...(!variationId && { basePriceMoney: { amount: BigInt(priceCents), currency: 'USD' } }),
-      });
-    } else {
-      // Fallback: use price from the booking request note (frontend calculated)
-      const sizeLabel = size === 'large' ? 'Large Pan' : 'Small Pan';
-      items.push({
-        name: `Menu Item (${sizeLabel})`,
-        quantity: '1',
-        basePriceMoney: { amount: BigInt(0), currency: 'USD' },
-      });
+    const menuItem = catalog.menuItems?.find((entry) => entry.id === itemId);
+    if (!menuItem) {
+      throw new Error(`Selected menu item is unavailable: ${itemId}`);
     }
+
+    const size = sizes[itemId] || 'small';
+    const variationId = size === 'large'
+      ? menuItem.largeVariationId || menuItem.smallVariationId
+      : menuItem.smallVariationId;
+    const priceCents = size === 'large' && menuItem.largePriceCents
+      ? menuItem.largePriceCents
+      : menuItem.priceCents;
+    const sizeLabel = size === 'large' ? 'Large Pan' : 'Small Pan';
+
+    items.push({
+      name: `${menuItem.name} (${sizeLabel})`,
+      quantity: '1',
+      catalogObjectId: variationId || undefined,
+      ...(!variationId && {
+        basePriceMoney: { amount: BigInt(priceCents), currency: 'USD' },
+      }),
+    });
   }
 
-  // Add-ons (flat fee)
   for (const addonId of booking.addonIds || []) {
-    const addon = addonMap.get(addonId);
-    if (!addon) continue;
+    const addon = catalog.addons.find((entry) => entry.id === addonId);
+    if (!addon) {
+      throw new Error(`Selected add-on is unavailable: ${addonId}`);
+    }
+
     items.push({
       name: addon.name,
       quantity: '1',
       catalogObjectId: addon.variationId || undefined,
-      ...(!addon.variationId && { basePriceMoney: { amount: BigInt(addon.priceCents), currency: 'USD' } }),
+      ...(!addon.variationId && {
+        basePriceMoney: { amount: BigInt(addon.priceCents), currency: 'USD' },
+      }),
     });
   }
 

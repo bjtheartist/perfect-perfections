@@ -59,6 +59,8 @@ export interface CatalogMenuItem {
   description: string;
   priceCents: number;        // small/half pan price
   largePriceCents?: number;  // large/full pan price
+  smallVariationId?: string;
+  largeVariationId?: string;
   category: string;
   imageUrl?: string;
 }

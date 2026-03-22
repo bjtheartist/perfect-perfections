@@ -36,6 +36,8 @@ function buildFallbackCatalog(): CatalogData {
     description: item.description || '',
     priceCents: item.smallPriceCents,
     largePriceCents: item.largePriceCents,
+    smallVariationId: '',
+    largeVariationId: '',
     category: item.category,
   }));
 
