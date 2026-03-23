@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type { BookingRequest, CatalogData } from '../../src/lib/square/types';
-import { buildQuoteFromCatalog } from '../../src/lib/quote';
+import { buildQuoteFromCatalog } from '../_lib/quote';
 import {
   createIdempotencyKey,
   createSquareClient,

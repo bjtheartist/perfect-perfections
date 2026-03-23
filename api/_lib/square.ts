@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createHash } from 'crypto';
 import { SquareClient, SquareEnvironment } from 'square';
-import { buildQuoteFromCatalog } from '../../src/lib/quote';
+import { buildQuoteFromCatalog } from './quote';
 import type { BookingRequest, CatalogData } from '../../src/lib/square/types';
 
 const SPECIAL_CATEGORIES = new Set(['Catering Packages', 'Add-Ons', 'Signature Dishes']);
