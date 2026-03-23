@@ -7,7 +7,7 @@ import {
   getSquareLocationId,
   handleCors,
   requireMethods,
-} from '../_lib/square';
+} from '../_lib/square.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (handleCors(req, res, ['POST'])) return;

@@ -2,7 +2,7 @@
  * Server-side quote builder — mirrors src/lib/quote.ts
  * Duplicated here to avoid cross-boundary imports that break Vercel serverless.
  */
-import type { BookingRequest, CatalogData, Quote } from '../../src/lib/square/types';
+import type { BookingRequest, CatalogData, Quote } from '../../src/lib/square/types.js';
 
 const DEPOSIT_RATE = 0.25;
 export const DEFAULT_TAX_RATE = 0.1025;

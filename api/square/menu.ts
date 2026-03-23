@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createSquareClient, getCatalogData, getErrorMessage, handleCors, requireMethods } from '../_lib/square';
+import { createSquareClient, getCatalogData, getErrorMessage, handleCors, requireMethods } from '../_lib/square.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (handleCors(req, res, ['GET'])) return;

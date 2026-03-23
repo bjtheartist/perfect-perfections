@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { BookingRequest, CatalogData } from '../../src/lib/square/types';
-import { buildQuoteFromCatalog } from '../_lib/quote';
+import type { BookingRequest, CatalogData } from '../../src/lib/square/types.js';
+import { buildQuoteFromCatalog } from '../_lib/quote.js';
 import {
   createIdempotencyKey,
   createSquareClient,
@@ -12,7 +12,7 @@ import {
   requireMethods,
   upsertCustomer,
   validateOrderRequest,
-} from '../_lib/square';
+} from '../_lib/square.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (handleCors(req, res, ['POST'])) return;
