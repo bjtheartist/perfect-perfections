@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   X,
@@ -43,7 +43,22 @@ export const BookingModal = ({
   isLive: boolean;
 }) => {
   const square = useSquare();
-  const squareEnabled = isSquareConfigured();
+  const [backendHealth, setBackendHealth] = useState<{ connected: boolean; environment?: string } | null>(null);
+
+  useEffect(() => {
+    if (!flow.isOpen || !isSquareConfigured()) return;
+    let cancelled = false;
+    square.checkHealth().then((result) => {
+      if (!cancelled && result.success && result.data) {
+        setBackendHealth({ connected: result.data.connected, environment: (result.data as any).environment });
+      } else if (!cancelled) {
+        setBackendHealth({ connected: false });
+      }
+    });
+    return () => { cancelled = true; };
+  }, [flow.isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const squareEnabled = isSquareConfigured() && (backendHealth?.connected ?? false);
   const activeQuote = flow.squareQuote ?? flow.fallbackQuote;
   const totalAmount = activeQuote ? activeQuote.totalCents / 100 : flow.total;
   const depositAmount = activeQuote ? activeQuote.depositCents / 100 : flow.deposit;
@@ -173,10 +188,20 @@ export const BookingModal = ({
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            {squareEnabled && (
-              <span className="flex items-center space-x-1 text-[9px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                <span>Square Live</span>
+            {isSquareConfigured() && backendHealth && (
+              <span className={`flex items-center space-x-1 text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                backendHealth.connected
+                  ? 'text-emerald-600 bg-emerald-50'
+                  : 'text-red-600 bg-red-50'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${backendHealth.connected ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                <span>{backendHealth.connected ? `Square ${backendHealth.environment || 'Live'}` : 'Square Offline'}</span>
+              </span>
+            )}
+            {isSquareConfigured() && !backendHealth && (
+              <span className="flex items-center space-x-1 text-[9px] font-bold uppercase tracking-wider text-zinc-400 bg-zinc-100 px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 bg-zinc-300 rounded-full animate-pulse"></span>
+                <span>Checking...</span>
               </span>
             )}
             <button onClick={flow.close} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">

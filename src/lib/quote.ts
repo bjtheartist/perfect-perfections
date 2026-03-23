@@ -1,5 +1,6 @@
-import { DEPOSIT_RATE } from "../data/constants";
 import type { BookingRequest, CatalogData, Quote } from "./square/types";
+
+const DEPOSIT_RATE = 0.25;
 
 export const DEFAULT_TAX_RATE = 0.1025;
 
