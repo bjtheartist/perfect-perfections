@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { SquareClient, SquareEnvironment } from 'square';
+import { setCorsOrigin } from '../_lib/square.js';
 
 function getClient() {
   return new SquareClient({
@@ -10,13 +11,16 @@ function getClient() {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setCorsOrigin(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-admin-token');
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   const secret = process.env.ADMIN_SECRET;
-  if (secret && req.headers['x-admin-token'] !== secret) {
+  if (!secret) {
+    return res.status(503).json({ success: false, error: 'Admin access not configured' });
+  }
+  if (req.headers['x-admin-token'] !== secret) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 

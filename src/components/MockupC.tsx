@@ -356,7 +356,7 @@ function GallerySection() {
                 transition={{ duration: 0.4, delay: i * 0.05 }}
                 className="aspect-square rounded-[40px] overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2"
               >
-                <img src={`${import.meta.env.BASE_URL}${img.url}`} alt={img.alt} className="w-full h-full object-cover" />
+                <img src={`${import.meta.env.BASE_URL}${img.url}`} alt={img.alt} loading="lazy" decoding="async" className="w-full h-full object-cover" />
               </motion.div>
             ))}
           </div>
@@ -378,7 +378,7 @@ function GallerySection() {
                 transition={{ duration: 0.4, delay: i * 0.05 }}
                 className="aspect-square rounded-[40px] overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2"
               >
-                <img src={`${import.meta.env.BASE_URL}${img.url}`} alt={img.alt} className="w-full h-full object-cover" />
+                <img src={`${import.meta.env.BASE_URL}${img.url}`} alt={img.alt} loading="lazy" decoding="async" className="w-full h-full object-cover" />
               </motion.div>
             ))}
           </div>
@@ -550,7 +550,7 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
           ].map((card, i) => (
             <div key={i} className="bg-white rounded-[40px] shadow-sm border border-zinc-100 hover:shadow-xl transition-all group overflow-hidden">
               <div className="h-40 overflow-hidden">
-                <img src={card.image} alt={card.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <img src={card.image} alt={card.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
               <div className="p-8 space-y-4">
                 <div className="w-12 h-12 bg-zinc-50 rounded-2xl flex items-center justify-center text-zinc-400 group-hover:bg-black group-hover:text-white transition-colors">
@@ -581,7 +581,7 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
         <div className="max-w-3xl mx-auto text-center space-y-12">
           <div className="relative inline-block">
             <div className="w-44 h-44 rounded-full overflow-hidden border-8 border-white shadow-xl mx-auto">
-              <img src={`${import.meta.env.BASE_URL}nikida.webp`} alt="Nikida" className="w-full h-full object-cover object-top" />
+              <img src={`${import.meta.env.BASE_URL}nikida.webp`} alt="Nikida" loading="lazy" decoding="async" className="w-full h-full object-cover object-top" />
             </div>
             <div className="absolute -right-4 -top-6 font-caveat text-2xl rotate-12 text-zinc-500">
               the heart behind the food

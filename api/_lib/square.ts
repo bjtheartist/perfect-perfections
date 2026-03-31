@@ -37,8 +37,23 @@ export function getSquareLocationId(): string {
   return getRequiredEnv('SQUARE_LOCATION_ID');
 }
 
+const ALLOWED_ORIGINS = [
+  'https://perfectperfectionscatering.com',
+  'https://www.perfectperfectionscatering.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
+export function setCorsOrigin(req: VercelRequest, res: VercelResponse): void {
+  const origin = req.headers.origin;
+  if (typeof origin === 'string' && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
+}
+
 export function handleCors(req: VercelRequest, res: VercelResponse, methods: string[]): boolean {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setCorsOrigin(req, res);
   res.setHeader('Access-Control-Allow-Methods', [...methods, 'OPTIONS'].join(','));
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-token');
   if (req.method === 'OPTIONS') {

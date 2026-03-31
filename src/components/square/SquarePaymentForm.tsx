@@ -61,13 +61,13 @@ export const SquarePaymentForm: React.FC<SquarePaymentFormProps> = ({
         applicationId={SQUARE_CONFIG.applicationId}
         locationId={SQUARE_CONFIG.locationId}
         cardTokenizeResponseReceived={(token, buyer) => {
-          if (token.errors) {
-            const msg = token.errors.map((e) => e.message).join(', ');
+          if (token.status === 'Error') {
+            const msg = (token as any).errors?.map((e: any) => e.message).join(', ') || 'Payment tokenization failed';
             onError?.(msg);
             return;
           }
-          if (token.token) {
-            onTokenize(token.token);
+          if (token.status === 'OK') {
+            onTokenize((token as any).token);
           }
         }}
       >

@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useBookingFlow } from './hooks/useBookingFlow';
@@ -8,6 +8,8 @@ import { MockupC } from './components/MockupC';
 import { FloatingContact } from './components/FloatingContact';
 import { BookingModal } from './components/BookingModal';
 import { AdminDashboard } from './components/AdminDashboard';
+import { AdminLogin } from './components/AdminLogin';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {
   const { catalog, isLive } = useCatalog();
@@ -18,25 +20,30 @@ export default function App() {
   });
   const isAdmin = searchParams.get('admin') === 'true';
 
-  useEffect(() => {
-    if (!isAdmin || adminToken) return;
-    const entered = window.prompt('Enter admin token');
-    if (entered) {
-      sessionStorage.setItem('pp_admin_token', entered);
-      setAdminToken(entered);
-    }
-  }, [isAdmin, adminToken]);
+  if (isAdmin && !adminToken) {
+    return <AdminLogin onLogin={setAdminToken} />;
+  }
 
   if (isAdmin) {
-    return <AdminDashboard adminToken={adminToken} onBack={() => { window.location.search = ''; }} />;
+    return (
+      <ErrorBoundary fallbackMessage="The admin dashboard encountered an error.">
+        <AdminDashboard adminToken={adminToken} onBack={() => { window.location.search = ''; }} />
+      </ErrorBoundary>
+    );
   }
 
   return (
     <div className="relative">
-      <MockupC onBook={() => booking.open('book')} onEstimate={() => booking.open('estimate')} catalog={catalog} />
+      <ErrorBoundary fallbackMessage="Something went wrong loading the page.">
+        <MockupC onBook={() => booking.open('book')} onEstimate={() => booking.open('estimate')} catalog={catalog} />
+      </ErrorBoundary>
       <FloatingContact />
       <AnimatePresence>
-        {booking.isOpen && <BookingModal flow={booking} catalog={catalog} isLive={isLive} />}
+        {booking.isOpen && (
+          <ErrorBoundary fallbackMessage="Something went wrong with the booking form.">
+            <BookingModal flow={booking} catalog={catalog} isLive={isLive} />
+          </ErrorBoundary>
+        )}
       </AnimatePresence>
       <Analytics />
       <SpeedInsights />

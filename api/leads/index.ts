@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { randomUUID } from 'crypto';
 import { SquareClient, SquareEnvironment } from 'square';
 import nodemailer from 'nodemailer';
+import { setCorsOrigin } from '../_lib/square.js';
 
 function getClient() {
   return new SquareClient({
@@ -12,7 +13,7 @@ function getClient() {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  setCorsOrigin(req, res);
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-admin-token');
   if (req.method === 'OPTIONS') return res.status(204).end();
@@ -31,6 +32,26 @@ async function createLead(req: VercelRequest, res: VercelResponse) {
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ error: 'Invalid email address' });
+    }
+
+    if (phone != null && typeof phone === 'string' && phone.trim()) {
+      const trimmedPhone = phone.trim();
+      if (!/^[0-9\s\-().+]+$/.test(trimmedPhone) || trimmedPhone.length < 7 || trimmedPhone.length > 20) {
+        return res.status(400).json({ error: 'Invalid phone number format' });
+      }
+    }
+
+    if (event_date != null && typeof event_date === 'string' && event_date.trim()) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(event_date.trim())) {
+        return res.status(400).json({ error: 'Invalid event date format (expected YYYY-MM-DD)' });
+      }
+    }
+
+    const VALID_EVENT_TYPES = ['Wedding', 'Corporate', 'Private Party', 'Birthday', 'Holiday', 'Graduation', 'Funeral/Repast', 'Other'];
+    if (event_type != null && typeof event_type === 'string' && event_type.trim()) {
+      if (!VALID_EVENT_TYPES.includes(event_type.trim())) {
+        return res.status(400).json({ error: `Invalid event type. Must be one of: ${VALID_EVENT_TYPES.join(', ')}` });
+      }
     }
 
     const client = getClient();
@@ -81,8 +102,12 @@ async function createLead(req: VercelRequest, res: VercelResponse) {
     res.status(201).json({ id: customerId });
   } catch (error: any) {
     console.error('Create Lead Error:', error);
-    res.status(500).json({ error: error.message || 'Failed to create lead' });
+    res.status(500).json({ error: 'Failed to create lead' });
   }
+}
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 async function notifyNewLead(lead: {
@@ -95,13 +120,13 @@ async function notifyNewLead(lead: {
   if (!gmailUser || !gmailAppPassword) return; // Skip if not configured
 
   const details = [
-    `<strong>Name:</strong> ${lead.name}`,
-    `<strong>Email:</strong> ${lead.email}`,
-    lead.phone ? `<strong>Phone:</strong> ${lead.phone}` : null,
-    lead.event_type ? `<strong>Event Type:</strong> ${lead.event_type}` : null,
-    lead.event_date ? `<strong>Event Date:</strong> ${lead.event_date}` : null,
+    `<strong>Name:</strong> ${escapeHtml(lead.name)}`,
+    `<strong>Email:</strong> ${escapeHtml(lead.email)}`,
+    lead.phone ? `<strong>Phone:</strong> ${escapeHtml(lead.phone)}` : null,
+    lead.event_type ? `<strong>Event Type:</strong> ${escapeHtml(lead.event_type)}` : null,
+    lead.event_date ? `<strong>Event Date:</strong> ${escapeHtml(lead.event_date)}` : null,
     lead.guests ? `<strong>Guests:</strong> ${lead.guests}` : null,
-    lead.message ? `<strong>Message:</strong> ${lead.message}` : null,
+    lead.message ? `<strong>Message:</strong> ${escapeHtml(lead.message)}` : null,
   ].filter(Boolean).join('<br/>');
 
   const transporter = nodemailer.createTransport({
@@ -122,7 +147,7 @@ async function notifyNewLead(lead: {
           ${details}
         </div>
         <p style="margin-top: 20px; color: #666; font-size: 14px;">
-          Reply directly to <a href="mailto:${lead.email}">${lead.email}</a>${lead.phone ? ` or call ${lead.phone}` : ''}.
+          Reply directly to <a href="mailto:${encodeURIComponent(lead.email)}">${escapeHtml(lead.email)}</a>${lead.phone ? ` or call ${escapeHtml(lead.phone)}` : ''}.
         </p>
       </div>
     `,
@@ -131,7 +156,10 @@ async function notifyNewLead(lead: {
 
 async function listLeads(req: VercelRequest, res: VercelResponse) {
   const secret = process.env.ADMIN_SECRET;
-  if (secret && req.headers['x-admin-token'] !== secret) {
+  if (!secret) {
+    return res.status(503).json({ success: false, error: 'Admin access not configured' });
+  }
+  if (req.headers['x-admin-token'] !== secret) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
 
@@ -182,6 +210,6 @@ async function listLeads(req: VercelRequest, res: VercelResponse) {
     res.json(leads);
   } catch (error: any) {
     console.error('List Leads Error:', error);
-    res.status(500).json({ error: error.message || 'Failed to list leads' });
+    res.status(500).json({ error: 'Failed to list leads' });
   }
 }
