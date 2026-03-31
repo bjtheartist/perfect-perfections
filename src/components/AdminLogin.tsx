@@ -11,6 +11,7 @@ export function AdminLogin({ onLogin }: AdminLoginProps) {
     e.preventDefault();
     if (!token.trim()) return;
     sessionStorage.setItem('pp_admin_token', token);
+    sessionStorage.setItem('pp_admin_token_ts', Date.now().toString());
     onLogin(token);
   };
 

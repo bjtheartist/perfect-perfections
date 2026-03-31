@@ -266,7 +266,7 @@ function CustomersTab({ token }: { token: string }) {
 }
 
 // ── Main Dashboard ──────────────────────────────────────────
-export const AdminDashboard = ({ onBack, adminToken }: { onBack: () => void; adminToken: string }) => {
+export const AdminDashboard = ({ onBack, onLogout, adminToken }: { onBack: () => void; onLogout: () => void; adminToken: string }) => {
   const [tab, setTab] = useState<TabKey>('leads');
 
   return (
@@ -277,12 +277,20 @@ export const AdminDashboard = ({ onBack, adminToken }: { onBack: () => void; adm
             <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             <p className="text-zinc-500">Manage leads, orders, payments &amp; customers.</p>
           </div>
-          <button
-            onClick={onBack}
-            className="bg-black text-white px-6 py-2 rounded-full text-sm font-bold uppercase tracking-widest"
-          >
-            Back to Site
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={onBack}
+              className="bg-black text-white px-6 py-2 rounded-full text-sm font-bold uppercase tracking-widest"
+            >
+              Back to Site
+            </button>
+            <button
+              onClick={onLogout}
+              className="border border-zinc-300 text-zinc-600 px-6 py-2 rounded-full text-sm font-bold uppercase tracking-widest hover:bg-zinc-100 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         {/* Tab bar */}
