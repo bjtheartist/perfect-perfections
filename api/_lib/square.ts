@@ -83,7 +83,9 @@ function stableStringify(value: unknown): string {
 }
 
 export function createIdempotencyKey(prefix: string, payload: unknown): string {
-  return `${prefix}-${createHash('sha256').update(stableStringify(payload)).digest('hex').slice(0, 44)}`;
+  const hash = createHash('sha256').update(stableStringify(payload)).digest('hex');
+  const maxLen = Math.max(8, 45 - prefix.length - 1);
+  return `${prefix}-${hash.slice(0, maxLen)}`;
 }
 
 export function getErrorMessage(error: unknown): string {

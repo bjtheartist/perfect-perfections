@@ -114,8 +114,9 @@ function toChicagoPickupAt(eventDate: string, eventTime: string): string {
     ?.value
     .replace('GMT', '') || '-06:00';
 
-  const normalizedOffset = /^[-+]\d{1,2}$/.test(offsetPart)
-    ? `${offsetPart}:00`
+  const shortMatch = offsetPart.match(/^([-+])(\d{1,2})$/);
+  const normalizedOffset = shortMatch
+    ? `${shortMatch[1]}${shortMatch[2].padStart(2, '0')}:00`
     : offsetPart;
 
   return `${eventDate}T${convertTo24Hr(eventTime)}:00${normalizedOffset}`;

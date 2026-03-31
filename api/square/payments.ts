@@ -40,17 +40,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ success: false, error: 'Payment amount cannot exceed order total' });
     }
 
+    const isFullPayment = normalizedAmountCents === orderTotalCents;
     const result = await client.payments.create({
       sourceId: normalizedSourceId,
-      idempotencyKey: createIdempotencyKey('payment', {
+      idempotencyKey: createIdempotencyKey('pay', {
         orderId: normalizedOrderId,
         amountCents: normalizedAmountCents,
         sourceId: normalizedSourceId,
       }),
       amountMoney: { amount: BigInt(normalizedAmountCents), currency: 'USD' },
-      orderId: normalizedOrderId,
+      orderId: isFullPayment ? normalizedOrderId : undefined,
+      referenceId: !isFullPayment ? normalizedOrderId : undefined,
       locationId: getSquareLocationId(),
-      note: normalizedNote || 'Perfect Perfections Catering — Deposit',
+      note: normalizedNote || `Perfect Perfections Catering — ${isFullPayment ? 'Payment' : 'Deposit'} (Order: ${normalizedOrderId})`,
       buyerEmailAddress: normalizedCustomerEmail || undefined,
       autocomplete: true,
     });
