@@ -177,7 +177,7 @@ export async function getCatalogData(client = createSquareClient()): Promise<Cat
   const imageMap = new Map<string, string>();
 
   for (const object of allObjects) {
-    if (object.type === 'CATEGORY') categoryMap.set(object.id, object.categoryData?.name || '');
+    if (object.type === 'CATEGORY') categoryMap.set(object.id, (object.categoryData?.name || '').trim());
     if (object.type === 'IMAGE') imageMap.set(object.id, object.imageData?.url || '');
   }
 

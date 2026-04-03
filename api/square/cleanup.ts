@@ -168,6 +168,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    // Fix category typos (e.g., "Breakfast " → merge into "Breakfast & Brunch")
+    const breakfastBadId = categoryNameToId.get('Breakfast ');
+    const breakfastGoodId = categoryNameToId.get('Breakfast & Brunch');
+    if (breakfastBadId && breakfastGoodId) {
+      // Reassign items from bad category to good category
+      for (const obj of allObjects) {
+        if (obj.type !== 'ITEM') continue;
+        const catId = obj.itemData?.categories?.[0]?.id || '';
+        if (catId === breakfastBadId) {
+          report.push({ action: 'recategorize', name: obj.itemData?.name, from: 'Breakfast ', to: 'Breakfast & Brunch' });
+          if (!dry) {
+            toUpsert.push({
+              type: 'ITEM', id: obj.id, version: obj.version,
+              itemData: { ...obj.itemData, categories: [{ id: breakfastGoodId }] },
+            });
+          }
+        }
+      }
+      // Delete the bad category
+      if (!dry) toDelete.push(breakfastBadId);
+      report.push({ action: 'delete_bad_category', name: 'Breakfast ', reason: 'trailing space' });
+    }
+
     // Group items by name
     const itemsByName = new Map<string, any[]>();
     for (const obj of allObjects) {
