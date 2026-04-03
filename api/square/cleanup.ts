@@ -296,14 +296,58 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return !REAL_CATS.has(catName);
         });
 
-        if (categorized.length >= 1 && uncategorized.length >= 1) {
-          // Keep the categorized version, delete uncategorized duplicates
+        if (categorized.length >= 1 && uncategorized.length >= 1 && smallPrice !== largePrice) {
+          // Merge: update the categorized item to have both small+large variations, delete uncategorized
+          const keep = categorized[0];
+          const keepVar = keep.vars[0];
+          const keepPrice = keep.singlePrice;
+          const otherPrice = uncategorized[0].singlePrice;
+          const isKeepSmall = keepPrice <= otherPrice;
+
+          if (!dry) {
+            toUpsert.push({
+              type: 'ITEM', id: keep.item.id, version: keep.item.version,
+              itemData: {
+                ...keep.item.itemData,
+                variations: [
+                  {
+                    type: 'ITEM_VARIATION', id: keepVar?.id || `${keep.item.id}-small`,
+                    itemVariationData: {
+                      name: 'Small Pan', pricingType: 'FIXED_PRICING',
+                      priceMoney: { amount: BigInt(isKeepSmall ? keepPrice : otherPrice), currency: 'USD' },
+                    },
+                  },
+                  {
+                    type: 'ITEM_VARIATION', id: `#${keep.item.id}-large-${randomUUID().slice(0, 8)}`,
+                    itemVariationData: {
+                      name: 'Large Pan', pricingType: 'FIXED_PRICING',
+                      priceMoney: { amount: BigInt(isKeepSmall ? otherPrice : keepPrice), currency: 'USD' },
+                    },
+                  },
+                ],
+              },
+            });
+          }
+
           for (const d of uncategorized) {
             toDelete.push(d.item.id);
             for (const v of d.vars) { if (v.id) toDelete.push(v.id); }
           }
-          // Also delete extra categorized copies
           for (const d of categorized.slice(1)) {
+            toDelete.push(d.item.id);
+            for (const v of d.vars) { if (v.id) toDelete.push(v.id); }
+          }
+          report.push({
+            action: 'merge_into_categorized',
+            name,
+            kept: keep.item.id,
+            smallPrice: Math.min(keepPrice, otherPrice) / 100,
+            largePrice: Math.max(keepPrice, otherPrice) / 100,
+            deleted: [...uncategorized, ...categorized.slice(1)].map(d => d.item.id),
+          });
+        } else if (categorized.length >= 1 && uncategorized.length >= 1) {
+          // Same price — just delete uncategorized copies
+          for (const d of uncategorized) {
             toDelete.push(d.item.id);
             for (const v of d.vars) { if (v.id) toDelete.push(v.id); }
           }
@@ -311,7 +355,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             action: 'delete_uncategorized_dupes',
             name,
             kept: categorized[0].item.id,
-            deleted: [...uncategorized, ...categorized.slice(1)].map(d => d.item.id),
+            deleted: uncategorized.map(d => d.item.id),
           });
         } else if (smallPrice === largePrice) {
           // Exact duplicates — just delete all but one
