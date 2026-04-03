@@ -53,7 +53,7 @@ export function buildQuoteFromCatalog(
   const subtotalCents = lineItems.reduce((sum, item) => sum + item.totalCents, 0);
   const taxCents = Math.round(subtotalCents * taxRate);
   const totalCents = subtotalCents + taxCents;
-  const depositCents = Math.round(totalCents * DEPOSIT_RATE);
+  const depositCents = Math.round(totalCents * (catalog.depositRate ?? DEPOSIT_RATE));
 
   return {
     lineItems,

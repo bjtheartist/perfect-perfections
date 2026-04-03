@@ -4,7 +4,7 @@ import { SquareClient, SquareEnvironment } from 'square';
 import { buildQuoteFromCatalog } from './quote.js';
 import type { BookingRequest, CatalogData } from '../../src/lib/square/types.js';
 
-const SPECIAL_CATEGORIES = new Set(['Catering Packages', 'Add-Ons', 'Signature Dishes']);
+const SPECIAL_CATEGORIES = new Set(['Catering Packages', 'Add-Ons', 'Signature Dishes', 'Settings']);
 
 type SquareEnvironmentName = 'sandbox' | 'production';
 
@@ -185,6 +185,7 @@ export async function getCatalogData(client = createSquareClient()): Promise<Cat
   const addons: CatalogData['addons'] = [];
   const dishes: CatalogData['dishes'] = [];
   const menuItems: NonNullable<CatalogData['menuItems']> = [];
+  let depositRate: number | undefined;
 
   for (const object of allObjects) {
     if (object.type !== 'ITEM') continue;
@@ -227,6 +228,14 @@ export async function getCatalogData(client = createSquareClient()): Promise<Cat
         pricingType,
         variationId: variation?.id || '',
       });
+      continue;
+    }
+
+    if (categoryName === 'Settings') {
+      const rawPercent = Number(customAttrs.pp_deposit_percent?.numberValue);
+      if (rawPercent >= 1 && rawPercent <= 100) {
+        depositRate = rawPercent / 100;
+      }
       continue;
     }
 
@@ -273,7 +282,7 @@ export async function getCatalogData(client = createSquareClient()): Promise<Cat
     return categoryCompare !== 0 ? categoryCompare : left.name.localeCompare(right.name);
   });
 
-  return { packages, addons, dishes, menuItems, fetchedAt: Date.now() };
+  return { packages, addons, dishes, menuItems, depositRate, fetchedAt: Date.now() };
 }
 
 export async function buildSquareQuote(booking: BookingRequest, client = createSquareClient()) {

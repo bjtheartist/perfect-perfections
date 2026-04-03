@@ -62,6 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       { key: 'pp_includes', name: 'Includes', type: 'STRING' },
       { key: 'pp_pricing_type', name: 'Pricing Type', type: 'STRING' },
       { key: 'pp_icon', name: 'Icon', type: 'STRING' },
+      { key: 'pp_deposit_percent', name: 'Deposit Percent', type: 'NUMBER' },
     ];
     for (const attr of attrs) {
       try {
@@ -79,6 +80,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     objects.push({ type: 'CATEGORY', id: '#pp-cat-packages', categoryData: { name: 'Catering Packages' } });
     objects.push({ type: 'CATEGORY', id: '#pp-cat-addons', categoryData: { name: 'Add-Ons' } });
     objects.push({ type: 'CATEGORY', id: '#pp-cat-dishes', categoryData: { name: 'Signature Dishes' } });
+    objects.push({ type: 'CATEGORY', id: '#pp-cat-settings', categoryData: { name: 'Settings' } });
 
     // Packages
     for (const pkg of PACKAGES) {
@@ -122,6 +124,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       });
     }
+
+    // Site Settings (configurable values — editable in Square Dashboard)
+    objects.push({
+      type: 'ITEM', id: '#pp-site-settings',
+      customAttributeValues: {
+        pp_deposit_percent: { numberValue: '50' },
+      },
+      itemData: {
+        name: 'Site Settings',
+        description: 'Configuration values for the website. Do not delete.',
+        categories: [{ id: '#pp-cat-settings' }],
+        variations: [{ type: 'ITEM_VARIATION', id: '#pp-site-settings-var', itemVariationData: { name: 'Config', pricingType: 'VARIABLE_PRICING' } }],
+      },
+    });
 
     const result = await client.catalog.batchUpsert({ idempotencyKey: randomUUID(), batches: [{ objects }] });
     res.json({ success: true, data: { objectsCreated: result.objects?.length ?? 0 } });

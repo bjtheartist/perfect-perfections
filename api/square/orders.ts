@@ -75,7 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const order = orderResult.order;
     const totalCents = Number(order?.totalMoney?.amount ?? 0);
-    const depositCents = Math.round(totalCents * 0.50);
+    const depositCents = Math.round(totalCents * (catalog.depositRate ?? 0.50));
 
     res.json({
       success: true,

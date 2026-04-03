@@ -127,8 +127,22 @@ describe('buildQuoteFromCatalog', () => {
     expect(quote.totalCents).toBe(27500 + expectedTax);
   });
 
-  it('computes deposit as Math.round(total × 0.50)', () => {
+  it('computes deposit as Math.round(total × 0.50) by default', () => {
     const quote = buildQuoteFromCatalog(makeBooking(), makeCatalog());
+    const expectedDeposit = Math.round(quote.totalCents * 0.50);
+
+    expect(quote.depositCents).toBe(expectedDeposit);
+  });
+
+  it('uses catalog.depositRate when provided', () => {
+    const quote = buildQuoteFromCatalog(makeBooking(), makeCatalog({ depositRate: 0.30 }));
+    const expectedDeposit = Math.round(quote.totalCents * 0.30);
+
+    expect(quote.depositCents).toBe(expectedDeposit);
+  });
+
+  it('falls back to 0.50 when depositRate is undefined', () => {
+    const quote = buildQuoteFromCatalog(makeBooking(), makeCatalog({ depositRate: undefined }));
     const expectedDeposit = Math.round(quote.totalCents * 0.50);
 
     expect(quote.depositCents).toBe(expectedDeposit);

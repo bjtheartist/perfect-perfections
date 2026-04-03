@@ -62,6 +62,7 @@ export const BookingModal = ({
   const activeQuote = flow.squareQuote ?? flow.fallbackQuote;
   const totalAmount = activeQuote ? activeQuote.totalCents / 100 : flow.total;
   const depositAmount = activeQuote ? activeQuote.depositCents / 100 : flow.deposit;
+  const depositPercent = Math.round((catalog.depositRate ?? 0.50) * 100);
   const isEstimate = flow.mode === 'estimate';
 
   if (!flow.isOpen) return null;
@@ -526,7 +527,7 @@ export const BookingModal = ({
               <div className="bg-emerald-50 rounded-2xl p-6 flex items-center justify-between">
                 <div>
                   <p className="text-sm text-emerald-800 font-bold">Deposit to Secure Your Date</p>
-                  <p className="text-xs text-emerald-600">50% of total — remainder due 7 days before event</p>
+                  <p className="text-xs text-emerald-600">{depositPercent}% of total — remainder due 7 days before event</p>
                 </div>
                 <span className="text-2xl font-bold text-emerald-800">
                   ${depositAmount.toLocaleString()}
@@ -613,7 +614,7 @@ export const BookingModal = ({
                 <p className="text-4xl font-bold">
                   ${depositAmount.toLocaleString()}
                 </p>
-                <p className="text-sm text-zinc-500">50% deposit to secure {flow.eventDate}</p>
+                <p className="text-sm text-zinc-500">{depositPercent}% deposit to secure {flow.eventDate}</p>
               </div>
 
               {/* Square Invoice Link — if invoice was created, show link + embedded pay */}

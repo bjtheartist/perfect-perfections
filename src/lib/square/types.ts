@@ -70,6 +70,7 @@ export interface CatalogData {
   addons: CatalogAddon[];
   dishes: CatalogDish[];
   menuItems?: CatalogMenuItem[];
+  depositRate?: number; // 0.01–1.0; undefined = use DEPOSIT_RATE fallback
   fetchedAt: number;
 }
 
@@ -112,7 +113,7 @@ export interface Quote {
   subtotalCents: number;
   taxCents: number;
   totalCents: number;
-  depositCents: number; // 50% of total
+  depositCents: number; // depositRate × total
   depositDueDate: string;
   balanceDueDate: string;
 }

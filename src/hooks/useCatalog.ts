@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { CatalogData, CatalogPackage, CatalogAddon, CatalogDish, IconName } from '../lib/square/types';
-import { CATERING_PACKAGES, MENU_ADDONS, SIGNATURE_DISHES, FALLBACK_MENU_ITEMS } from '../data/constants';
+import { CATERING_PACKAGES, MENU_ADDONS, SIGNATURE_DISHES, FALLBACK_MENU_ITEMS, DEPOSIT_RATE } from '../data/constants';
 
 /** Convert hardcoded constants to CatalogData shape as fallback */
 function buildFallbackCatalog(): CatalogData {
@@ -41,7 +41,7 @@ function buildFallbackCatalog(): CatalogData {
     category: item.category,
   }));
 
-  return { packages, addons, dishes, menuItems, fetchedAt: Date.now() };
+  return { packages, addons, dishes, menuItems, depositRate: DEPOSIT_RATE, fetchedAt: Date.now() };
 }
 
 export function useCatalog() {
