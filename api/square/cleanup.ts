@@ -152,6 +152,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const client = createSquareClient();
 
   try {
+    // Direct delete mode: POST with { deleteIds: [...] }
+    const body = typeof req.body === 'object' ? req.body : {};
+    if (Array.isArray(body.deleteIds) && body.deleteIds.length > 0) {
+      if (!dry) {
+        await client.catalog.batchDelete({ objectIds: body.deleteIds });
+      }
+      return res.json({ success: true, dry, deleted: body.deleteIds.length });
+    }
+
     // 1. Fetch all catalog objects
     const allObjects: any[] = [];
     for await (const obj of await client.catalog.list({ types: 'ITEM,CATEGORY' })) {
