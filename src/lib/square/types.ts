@@ -112,7 +112,7 @@ export interface Quote {
   subtotalCents: number;
   taxCents: number;
   totalCents: number;
-  depositCents: number; // 25% of total
+  depositCents: number; // 50% of total
   depositDueDate: string;
   balanceDueDate: string;
 }

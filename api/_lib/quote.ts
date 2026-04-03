@@ -4,7 +4,7 @@
  */
 import type { BookingRequest, CatalogData, Quote } from '../../src/lib/square/types.js';
 
-const DEPOSIT_RATE = 0.25;
+const DEPOSIT_RATE = 0.50;
 export const DEFAULT_TAX_RATE = 0.1025;
 
 export function buildQuoteFromCatalog(

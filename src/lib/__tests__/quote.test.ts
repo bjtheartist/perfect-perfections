@@ -127,9 +127,9 @@ describe('buildQuoteFromCatalog', () => {
     expect(quote.totalCents).toBe(27500 + expectedTax);
   });
 
-  it('computes deposit as Math.round(total × 0.25)', () => {
+  it('computes deposit as Math.round(total × 0.50)', () => {
     const quote = buildQuoteFromCatalog(makeBooking(), makeCatalog());
-    const expectedDeposit = Math.round(quote.totalCents * 0.25);
+    const expectedDeposit = Math.round(quote.totalCents * 0.50);
 
     expect(quote.depositCents).toBe(expectedDeposit);
   });

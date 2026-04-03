@@ -269,7 +269,7 @@ export const MENU_ADDONS = [
   { id: 'servers', name: 'Additional Servers (2hr)', price: 120, per: 'flat' as const },
 ];
 
-export const DEPOSIT_RATE = 0.25;
+export const DEPOSIT_RATE = 0.50;
 
 export const FAQ_ITEMS = [
   {
@@ -290,7 +290,7 @@ export const FAQ_ITEMS = [
   },
   {
     question: 'How do I book Perfect Perfections Catering?',
-    answer: 'You can book by calling or texting (773) 936-6416, sending a message through our website contact form, or DMing us on Instagram @perfectperfectionscatering. We typically respond within 24 hours. A 25% deposit is required to secure your date.',
+    answer: 'You can book by calling or texting (773) 936-6416, sending a message through our website contact form, or DMing us on Instagram @perfectperfectionscatering. We typically respond within 24 hours. A 50% deposit is required to secure your date.',
   },
   {
     question: 'What areas do you serve?',

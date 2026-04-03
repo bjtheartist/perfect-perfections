@@ -90,7 +90,7 @@ async function createInvoice(req: VercelRequest, res: VercelResponse) {
         ],
         deliveryMethod: 'EMAIL',
         title: 'Perfect Perfections Catering — Event Deposit',
-        description: 'Thank you for choosing Perfect Perfections! This invoice includes your 25% deposit and remaining balance.',
+        description: 'Thank you for choosing Perfect Perfections! This invoice includes your 50% deposit and remaining balance.',
         acceptedPaymentMethods: { card: true, squareGiftCard: false, bankAccount: true },
       },
       idempotencyKey: createIdempotencyKey('invoice', {
