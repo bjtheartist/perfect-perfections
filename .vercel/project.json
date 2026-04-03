@@ -1,16 +1,1 @@
-{
-  "projectId": "prj_LgSC7txhuKF6ZS8S4pY8nenxPipN",
-  "orgId": "team_bXT84tpXD5A91oB31QGs9eh3",
-  "projectName": "perfect-perfections",
-  "settings": {
-    "createdAt": 1772730992656,
-    "framework": "vite",
-    "devCommand": null,
-    "installCommand": null,
-    "buildCommand": "vite build",
-    "outputDirectory": "dist",
-    "rootDirectory": null,
-    "directoryListing": false,
-    "nodeVersion": "24.x"
-  }
-}
+{"projectId":"prj_MACNsR0NeHgTg9ATEIv2Mj40ckko","orgId":"team_XO6fMiSJSDuyYJSGyEMv6VoK","projectName":"perfect-perfections"}
