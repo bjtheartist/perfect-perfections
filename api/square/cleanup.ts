@@ -260,7 +260,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const smallPrice = prices[0];
         const largePrice = prices[prices.length - 1];
 
-        if (smallPrice === largePrice) {
+        // Check if one is in a real category and others are in "Menu" — keep the categorized one
+        const REAL_CATS = new Set(['Entrées', 'Appetizers', 'Sides', 'Breakfast & Brunch', 'Desserts', 'Signature Dishes']);
+        const categorized = singleItems.filter(s => {
+          const catId = s.item.itemData?.categories?.[0]?.id || '';
+          const catName = categoryIdToName.get(catId) || '';
+          return REAL_CATS.has(catName);
+        });
+        const uncategorized = singleItems.filter(s => {
+          const catId = s.item.itemData?.categories?.[0]?.id || '';
+          const catName = categoryIdToName.get(catId) || '';
+          return !REAL_CATS.has(catName);
+        });
+
+        if (categorized.length >= 1 && uncategorized.length >= 1) {
+          // Keep the categorized version, delete uncategorized duplicates
+          for (const d of uncategorized) {
+            toDelete.push(d.item.id);
+            for (const v of d.vars) { if (v.id) toDelete.push(v.id); }
+          }
+          // Also delete extra categorized copies
+          for (const d of categorized.slice(1)) {
+            toDelete.push(d.item.id);
+            for (const v of d.vars) { if (v.id) toDelete.push(v.id); }
+          }
+          report.push({
+            action: 'delete_uncategorized_dupes',
+            name,
+            kept: categorized[0].item.id,
+            deleted: [...uncategorized, ...categorized.slice(1)].map(d => d.item.id),
+          });
+        } else if (smallPrice === largePrice) {
           // Exact duplicates — just delete all but one
           for (const d of singleItems.slice(1)) {
             toDelete.push(d.item.id);
