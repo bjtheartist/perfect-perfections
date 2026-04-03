@@ -168,6 +168,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
+    const toDelete: string[] = [];
+    const toUpsert: any[] = [];
+    const report: any[] = [];
+
     // Fix category typos (e.g., "Breakfast " → merge into "Breakfast & Brunch")
     const breakfastBadId = categoryNameToId.get('Breakfast ');
     const breakfastGoodId = categoryNameToId.get('Breakfast & Brunch');
@@ -199,10 +203,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!itemsByName.has(name)) itemsByName.set(name, []);
       itemsByName.get(name)!.push(obj);
     }
-
-    const toDelete: string[] = [];
-    const toUpsert: any[] = [];
-    const report: any[] = [];
 
     for (const [name, items] of itemsByName) {
       if (items.length <= 1) {
