@@ -202,7 +202,7 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
           <div className="space-y-4">
             <h2 className="text-5xl font-playfair">Meet Nikida Brock</h2>
             <p className="text-xl text-zinc-600 leading-relaxed">
-              With 14 years of experience in the food industry — including years as a bakery buyer at Whole Foods Market — Nikida built a strong foundation in customer service, leadership, and an eye for quality. But her true passion — delighting people through food — led her to start Perfect Perfections Catering, combining professional expertise with generations of family recipes. Based on Chicago's South Side, Nikida is on a mission to wow every guest, one unforgettable plate at a time.
+              Nikida Brock brings 14 years of food industry experience, including several years as a bakery buyer at Whole Foods Market, where she developed a sharp eye for quality and a deep commitment to customer service and leadership. Driven by a lifelong passion for bringing joy to others through food, she founded Perfect Perfections Catering, blending her professional background with treasured family recipes passed down through generations. From Chicago's South Side, Nikida is committed to creating unforgettable meals that leave every guest impressed.
             </p>
           </div>
 
