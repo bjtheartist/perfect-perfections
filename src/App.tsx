@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useBookingFlow } from './hooks/useBookingFlow';
 import { useCatalog } from './hooks/useCatalog';
+import { useContentful } from './hooks/useContentful';
 import { MockupC } from './components/MockupC';
 import { FloatingContact } from './components/FloatingContact';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -14,6 +15,7 @@ const AdminLogin = lazy(() => import('./components/AdminLogin').then(m => ({ def
 
 export default function App() {
   const { catalog, isLive } = useCatalog();
+  const { content } = useContentful();
   const booking = useBookingFlow(catalog);
   const searchParams = new URLSearchParams(window.location.search);
   const [adminToken, setAdminToken] = useState(() => {
@@ -56,7 +58,7 @@ export default function App() {
   return (
     <div className="relative">
       <ErrorBoundary fallbackMessage="Something went wrong loading the page.">
-        <MockupC onBook={() => booking.open('book')} onEstimate={() => booking.open('estimate')} catalog={catalog} />
+        <MockupC onBook={() => booking.open('book')} onEstimate={() => booking.open('estimate')} catalog={catalog} content={content} />
       </ErrorBoundary>
       <FloatingContact />
       <AnimatePresence>

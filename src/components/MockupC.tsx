@@ -12,6 +12,7 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import type { CatalogData, IconName } from '../lib/square/types';
+import type { SiteContent } from '../lib/contentful';
 import type { ReactElement } from 'react';
 import { motion } from 'motion/react';
 import { useLeadForm } from '../hooks/useLeadForm';
@@ -30,9 +31,17 @@ const ICON_MAP: Record<IconName, ReactElement> = {
   cake: <Cake />,
 };
 
-export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; onEstimate: () => void; catalog: CatalogData }) => {
+export const MockupC = ({ onBook, onEstimate, catalog, content }: { onBook: () => void; onEstimate: () => void; catalog: CatalogData; content: SiteContent | null }) => {
   const { status, errorMessage, submitLead } = useLeadForm();
   const trackedSections = useRef(new Set<string>());
+
+  // Contentful content with hardcoded fallbacks
+  const hero = content?.hero;
+  const about = content?.about;
+  const settings = content?.settings;
+  const services = content?.services;
+  const testimonials = content?.testimonials;
+  const faqItems = content?.faqs ?? FAQ_ITEMS;
 
   useEffect(() => {
     const sections = document.querySelectorAll('section[id]');
@@ -75,8 +84,8 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-white shadow-sm px-8 py-4 flex justify-between items-center rounded-b-3xl mx-4 mt-2">
         <div className="flex items-center space-x-4">
-          <span className="text-2xl font-playfair font-medium">Perfect Perfections</span>
-          <span className="font-caveat text-lg text-zinc-400 hidden sm:inline">taste and see that the Lord is good</span>
+          <span className="text-2xl font-playfair font-medium">{settings?.siteName ?? 'Perfect Perfections'}</span>
+          <span className="font-caveat text-lg text-zinc-400 hidden sm:inline">{settings?.tagline ?? 'taste and see that the Lord is good'}</span>
         </div>
         <div className="hidden md:flex space-x-8 text-sm font-medium">
           <a href="#services" className="hover:text-zinc-500 transition-colors">Services</a>
@@ -99,21 +108,21 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              Soulful food,
+              {hero?.headingLine1 ?? 'Soulful food,'}
             </motion.span>
             <span className="block text-6xl md:text-8xl mt-2">
-              <HandwrittenText text="Perfectly Crafted." delay={0.6} />
+              <HandwrittenText text={hero?.headingLine2 ?? "Perfectly Crafted."} delay={0.6} />
             </span>
           </h1>
           <p className="text-lg md:text-xl max-w-2xl mx-auto opacity-80 font-light">
-            Layers of flavor, perfectly crafted for your events, gatherings, and celebrations
+            {hero?.subtitle ?? 'Layers of flavor, perfectly crafted for your events, gatherings, and celebrations'}
           </p>
           <div className="flex flex-wrap justify-center gap-4 pt-4">
             <button onClick={() => { onBook(); trackEvent('cta_click_book', { location: 'hero' }); }} className="bg-white text-black px-10 py-4 rounded-full font-medium hover:bg-zinc-100 transition-all shadow-lg">
-              Book Your Event
+              {hero?.bookCtaText ?? 'Book Your Event'}
             </button>
             <button onClick={() => { onEstimate(); trackEvent('cta_click_estimate', { location: 'hero' }); }} className="border-2 border-white/60 text-white px-10 py-4 rounded-full font-medium hover:bg-white/10 transition-all">
-              Get Free Estimate
+              {hero?.estimateCtaText ?? 'Get Free Estimate'}
             </button>
             <button onClick={() => { downloadMenu(); trackEvent('menu_download', { location: 'hero' }); }} className="border-2 border-white/60 text-white px-10 py-4 rounded-full font-medium hover:bg-white/10 transition-all flex items-center space-x-2">
               <Download className="w-4 h-4" /><span>Download Menu</span>
@@ -130,36 +139,15 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
           <p className="text-zinc-500 max-w-2xl mx-auto">From intimate dinners to large-scale events, we bring rich, layered flavors to every table. Talk, eat, savor, be thankful.</p>
         </div>
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {[
-            {
-              icon: <UtensilsCrossed />,
-              title: 'Catering Service',
-              desc: 'Full-service catering for any occasion — from drop-off platters to complete setup with professional servers, equipment, and breakdown.',
-              image: serviceImages[0],
-              cta: 'Book Catering',
-            },
-            {
-              icon: <ClipboardList />,
-              title: 'Meal Prep',
-              desc: 'Weekly meal prep tailored to your taste. Fresh, flavorful dishes portioned and ready to heat — eating well made easy.',
-              image: serviceImages[1],
-              cta: 'Learn More',
-            },
-            {
-              icon: <PartyPopper />,
-              title: 'Events & Pop-Ups',
-              desc: 'Weddings, corporate events, birthdays, holiday parties, and community pop-ups. We bring the flavor, you bring the guests.',
-              image: serviceImages[2],
-              cta: 'Plan Your Event',
-            },
-            {
-              icon: <ChefHat />,
-              title: 'Private Chef',
-              desc: 'An intimate, personalized dining experience in your home. Perfect for date nights, small gatherings, or treating yourself.',
-              image: serviceImages[3],
-              cta: 'Book a Chef',
-            },
-          ].map((card, i) => (
+          {(services ?? [
+            { title: 'Catering Service', description: 'Full-service catering for any occasion — from drop-off platters to complete setup with professional servers, equipment, and breakdown.', ctaText: 'Book Catering', order: 1 },
+            { title: 'Meal Prep', description: 'Weekly meal prep tailored to your taste. Fresh, flavorful dishes portioned and ready to heat — eating well made easy.', ctaText: 'Learn More', order: 2 },
+            { title: 'Events & Pop-Ups', description: 'Weddings, corporate events, birthdays, holiday parties, and community pop-ups. We bring the flavor, you bring the guests.', ctaText: 'Plan Your Event', order: 3 },
+            { title: 'Private Chef', description: 'An intimate, personalized dining experience in your home. Perfect for date nights, small gatherings, or treating yourself.', ctaText: 'Book a Chef', order: 4 },
+          ]).map((card, i) => {
+            const icons = [<UtensilsCrossed />, <ClipboardList />, <PartyPopper />, <ChefHat />];
+            return { icon: icons[i % icons.length], title: card.title, desc: card.description, image: serviceImages[i % serviceImages.length], cta: card.ctaText };
+          }).map((card, i) => (
             <div key={i} className="bg-white rounded-[40px] shadow-sm border border-zinc-100 hover:shadow-xl transition-all group overflow-hidden">
               <div className="h-40 overflow-hidden">
                 <img src={card.image} alt={card.title} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -196,13 +184,13 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
               <img src={`${import.meta.env.BASE_URL}nikida.webp`} alt="Nikida" loading="lazy" decoding="async" className="w-full h-full object-cover object-top" />
             </div>
             <div className="absolute -right-4 -top-6 font-caveat text-2xl rotate-12 text-zinc-500">
-              the heart behind the food
+              {about?.tagline ?? 'the heart behind the food'}
             </div>
           </div>
           <div className="space-y-4">
-            <h2 className="text-5xl font-playfair">Meet Nikida Brock</h2>
+            <h2 className="text-5xl font-playfair">{about?.heading ?? 'Meet Nikida Brock'}</h2>
             <p className="text-xl text-zinc-600 leading-relaxed">
-              Nikida Brock brings 14 years of food industry experience, including several years as a bakery buyer at Whole Foods Market, where she developed a sharp eye for quality and a deep commitment to customer service and leadership. Driven by a lifelong passion for bringing joy to others through food, she founded Perfect Perfections Catering, blending her professional background with treasured family recipes passed down through generations. From Chicago's South Side, Nikida is committed to creating unforgettable meals that leave every guest impressed.
+              {about?.bio ?? "Nikida Brock brings 14 years of food industry experience, including several years as a bakery buyer at Whole Foods Market, where she developed a sharp eye for quality and a deep commitment to customer service and leadership. Driven by a lifelong passion for bringing joy to others through food, she founded Perfect Perfections Catering, blending her professional background with treasured family recipes passed down through generations. From Chicago's South Side, Nikida is committed to creating unforgettable meals that leave every guest impressed."}
             </p>
           </div>
 
@@ -236,38 +224,14 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
             <p className="text-zinc-500 max-w-xl mx-auto">Real words from real clients — peace, joy, hope, and love in every plate.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                name: 'Michele',
-                label: 'Repeat Client',
-                quote: 'Your service was awesome. Everyone loved everything again. Put me down for superbowl catering.',
-              },
-              {
-                name: 'Danielle',
-                label: 'Client',
-                quote: 'My family LOVED the food!!! Thanks again!',
-              },
-              {
-                name: 'Cynthia West',
-                label: 'Client',
-                quote: "Everyone raved about your food!! It was delicious!!!!!! I'm firing my other caterers going forward. No comparison!!!!",
-              },
-              {
-                name: 'El Valor Event Client',
-                label: 'Corporate Event',
-                quote: "This food is so good I just don't know how you do it. Thank you for making this happen.",
-              },
-              {
-                name: 'Monique',
-                label: 'Repeat Client',
-                quote: 'Thank u so much. Everything was really good.',
-              },
-              {
-                name: 'Jade Allen',
-                label: 'Client',
-                quote: 'Thank you for everything. People still talking about the food. Appreciate you so much. It was beautiful.',
-              },
-            ].map((t, i) => (
+            {(testimonials ?? [
+              { name: 'Michele', label: 'Repeat Client', quote: 'Your service was awesome. Everyone loved everything again. Put me down for superbowl catering.', order: 1 },
+              { name: 'Danielle', label: 'Client', quote: 'My family LOVED the food!!! Thanks again!', order: 2 },
+              { name: 'Cynthia West', label: 'Client', quote: "Everyone raved about your food!! It was delicious!!!!!! I'm firing my other caterers going forward. No comparison!!!!", order: 3 },
+              { name: 'El Valor Event Client', label: 'Corporate Event', quote: "This food is so good I just don't know how you do it. Thank you for making this happen.", order: 4 },
+              { name: 'Monique', label: 'Repeat Client', quote: 'Thank u so much. Everything was really good.', order: 5 },
+              { name: 'Jade Allen', label: 'Client', quote: 'Thank you for everything. People still talking about the food. Appreciate you so much. It was beautiful.', order: 6 },
+            ]).map((t, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
@@ -347,7 +311,7 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
             <h2 className="font-caveat text-4xl">Frequently Asked Questions</h2>
           </div>
           <div className="space-y-4">
-            {FAQ_ITEMS.map((item, i) => (
+            {faqItems.map((item, i) => (
               <details key={i} className="group bg-zinc-50 rounded-2xl overflow-hidden">
                 <summary className="cursor-pointer px-8 py-5 font-playfair text-lg flex justify-between items-center list-none [&::-webkit-details-marker]:hidden">
                   {item.question}
@@ -368,8 +332,8 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
       {/* Footer */}
       <footer className="bg-[#1A1A1A] text-white py-24 px-8 rounded-t-[60px]">
         <div className="max-w-4xl mx-auto text-center space-y-8">
-          <h2 className="text-4xl font-playfair">Perfect Perfections</h2>
-          <span className="font-caveat text-2xl text-zinc-500 block">made with love</span>
+          <h2 className="text-4xl font-playfair">{settings?.siteName ?? 'Perfect Perfections'}</h2>
+          <span className="font-caveat text-2xl text-zinc-500 block">{settings?.footerTagline ?? 'made with love'}</span>
           <nav className="flex flex-wrap justify-center gap-6 text-sm text-zinc-500">
             <a href="#services" className="hover:text-white transition-colors">Services</a>
             <a href="#menu" className="hover:text-white transition-colors">Menu</a>
@@ -380,11 +344,11 @@ export const MockupC = ({ onBook, onEstimate, catalog }: { onBook: () => void; o
             <a href="#contact" className="hover:text-white transition-colors">Contact</a>
           </nav>
           <div className="flex justify-center space-x-8 text-zinc-400">
-            <a href="tel:+17739366416" className="hover:text-white transition-colors">(773) 936-6416</a>
-            <a href="mailto:perfectperfectionscatering@gmail.com" className="hover:text-white transition-colors">Email</a>
-            <a href="https://instagram.com/perfectperfectionscatering" target="_blank" className="hover:text-white transition-colors">Instagram</a>
+            <a href={`tel:${(settings?.phone ?? '(773) 936-6416').replace(/[^+\d]/g, '')}`} className="hover:text-white transition-colors">{settings?.phone ?? '(773) 936-6416'}</a>
+            <a href={`mailto:${settings?.email ?? 'perfectperfectionscatering@gmail.com'}`} className="hover:text-white transition-colors">Email</a>
+            <a href={settings?.instagramUrl ?? 'https://instagram.com/perfectperfectionscatering'} target="_blank" className="hover:text-white transition-colors">Instagram</a>
           </div>
-          <p className="text-zinc-500">South Side Chicago</p>
+          <p className="text-zinc-500">{settings?.location ?? 'South Side Chicago'}</p>
           <div className="pt-12 border-t border-white/5 flex flex-col items-center space-y-4">
             <p className="text-xs text-zinc-600">&copy; 2026 · Made with ♥</p>
           </div>
