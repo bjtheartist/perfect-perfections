@@ -74,7 +74,7 @@ function LeadsTab({ token }: { token: string }) {
     finally { setLoading(false); }
   };
 
-  const updateStatus = async (id: number, status: LeadStatus) => {
+  const updateStatus = async (id: string, status: LeadStatus) => {
     const res = await adminFetch(`/api/leads/${id}`, token, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
@@ -135,7 +135,7 @@ function OrdersTab({ token }: { token: string }) {
     (async () => {
       try {
         setLoading(true);
-        const res = await adminFetch('/api/square/admin/orders', token);
+        const res = await adminFetch('/api/square/admin?resource=orders', token);
         const json = await res.json();
         if (!json.success) { setError(json.error || 'Unable to load orders'); return; }
         setOrders(json.data || []);
@@ -184,7 +184,7 @@ function TransactionsTab({ token }: { token: string }) {
     (async () => {
       try {
         setLoading(true);
-        const res = await adminFetch('/api/square/admin/transactions', token);
+        const res = await adminFetch('/api/square/admin?resource=transactions', token);
         const json = await res.json();
         if (!json.success) { setError(json.error || 'Unable to load transactions'); return; }
         setTxns(json.data || []);
@@ -234,7 +234,7 @@ function CustomersTab({ token }: { token: string }) {
     (async () => {
       try {
         setLoading(true);
-        const res = await adminFetch('/api/square/admin/customers', token);
+        const res = await adminFetch('/api/square/admin?resource=customers', token);
         const json = await res.json();
         if (!json.success) { setError(json.error || 'Unable to load customers'); return; }
         setCustomers(json.data || []);

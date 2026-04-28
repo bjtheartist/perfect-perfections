@@ -7,6 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const data = await getCatalogData(createSquareClient());
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
     res.json({ success: true, data });
   } catch (error) {
     console.error('Square Catalog Error:', error);

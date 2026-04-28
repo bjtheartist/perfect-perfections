@@ -28,7 +28,7 @@ export const LeadDashboard = ({ onBack, adminToken }: { onBack: () => void; admi
     }
   };
 
-  const updateStatus = async (id: number, status: LeadStatus) => {
+  const updateStatus = async (id: string, status: LeadStatus) => {
     const res = await fetch(`/api/leads/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken },

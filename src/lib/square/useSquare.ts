@@ -2,7 +2,7 @@
  * useSquare — React hook for Square integration
  *
  * This is the frontend's single interface to all Square functionality.
- * It talks to our Express API routes, which talk to Square.
+ * It talks to our Vercel API routes, which talk to Square.
  * The frontend never imports the Square SDK directly (except Web Payments SDK).
  */
 import { useState, useCallback } from 'react';

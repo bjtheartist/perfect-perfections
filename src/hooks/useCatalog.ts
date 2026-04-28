@@ -54,7 +54,7 @@ export function useCatalog() {
 
     async function fetchCatalog() {
       try {
-        const res = await fetch('/api/square/menu');
+        const res = await fetch('/api/square/menu', { cache: 'no-store' });
         const json = await res.json();
         if (!cancelled && json.success && json.data) {
           const data = json.data as CatalogData;

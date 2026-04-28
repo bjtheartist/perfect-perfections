@@ -38,5 +38,12 @@
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "ajv": "^8.20.0",
+    "minimatch": "^10.2.5",
+    "path-to-regexp": "^6.3.0",
+    "smol-toml": "^1.6.1",
+    "undici": "^6.25.0"
   }
 }

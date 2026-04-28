@@ -24,8 +24,8 @@ Single-page app with one main layout component (`MockupC.tsx`) and a multi-step 
 
 - **`hooks/useCatalog.ts`** — Fetches menu from `/api/square/menu`. If Square is unavailable, falls back to hardcoded data in `data/constants.ts`. The `isLive` flag tells the UI whether Square is connected.
 - **`hooks/useBookingFlow.ts`** — State machine for the 5-step booking wizard (package → details → quote → deposit → confirmed). Tracks selected package, menu items with pan sizes (small/large), add-ons, customer info, and Square integration state.
-- **`lib/quote.ts`** — `buildQuoteFromCatalog()` calculates line items from selected package (flat service fee), menu items (per-pan pricing), and add-ons. Applies 10.25% Chicago tax and 25% deposit.
-- **`lib/square/useSquare.ts`** — Frontend API client that calls backend routes (not Square SDK directly). Handles health checks, quotes, orders, invoices, and payments.
+- **`lib/quote.ts`** — `buildQuoteFromCatalog()` calculates line items from selected package (flat service fee), menu items (per-pan pricing), and add-ons. Applies 10.25% Chicago tax and 50% deposit.
+- **`lib/square/useSquare.ts`** — Frontend API client that calls Vercel API routes (not Square SDK directly). Handles health checks, quotes, orders, invoices, and payments.
 - **`lib/square/types.ts`** — Shared types between frontend and backend. `CatalogData` is the unified shape for both live Square data and fallback constants.
 - **`data/constants.ts`** — Fallback menu data (90+ items with small/large pan prices), catering packages, add-ons, meal prep menus, FAQ. This is the offline source of truth.
 
@@ -35,7 +35,7 @@ Vercel serverless functions (30s max duration). All Square API calls happen serv
 
 - **`api/square/menu.ts`** — Lists Square catalog, transforms items into `CatalogData`. Supports two variations per item (Small Pan / Large Pan).
 - **`api/square/orders.ts`** — Creates Square orders with customer lookup/creation, line items, 10.25% tax, and PICKUP fulfillment.
-- **`api/square/invoices.ts`** — Creates invoices with DEPOSIT (25%) + BALANCE payment requests.
+- **`api/square/invoices.ts`** — Creates invoices with DEPOSIT (50% by default, configurable from Square catalog settings) + BALANCE payment requests.
 - **`api/square/seed.ts`** — Admin-only endpoint that seeds Square catalog with custom attributes and categories.
 - **`api/leads/index.ts`** — Lead capture: creates Square customers and sends notification emails via nodemailer.
 - **`api/_lib/admin.ts`** — `requireAdmin()` middleware checks `x-admin-token` header against `ADMIN_SECRET`.
@@ -62,6 +62,11 @@ Access admin dashboard at `/?admin=true` — prompts for `ADMIN_SECRET` token (s
 - `SQUARE_LOCATION_ID` — Square location
 - `SQUARE_ENVIRONMENT` — `sandbox` or `production`
 - `ADMIN_SECRET` — Protects admin endpoints
+- `GMAIL_USER` — Gmail user for lead notification email (optional)
+- `GMAIL_APP_PASSWORD` — Gmail app password for lead notification email (optional)
+- `NOTIFY_EMAIL` — Recipient for lead notification email (optional)
+- `VITE_CONTENTFUL_SPACE_ID` — Contentful space ID for editable content (optional)
+- `VITE_CONTENTFUL_ACCESS_TOKEN` — Contentful delivery token for editable content (optional)
 
 ## Deployment
 
