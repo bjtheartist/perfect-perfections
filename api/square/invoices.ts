@@ -8,9 +8,11 @@ import {
   getSquareLocationId,
   handleCors,
 } from '../_lib/square.js';
+import { rateLimit, verifyBookingToken } from '../_lib/security.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (handleCors(req, res, ['GET', 'POST'])) return;
+  if (req.method !== 'OPTIONS' && rateLimit(req, res, { name: 'square-invoices', limit: 20, windowMs: 10 * 60 * 1000 })) return;
 
   if (req.method === 'GET') return getInvoice(req, res);
   if (req.method === 'POST') return createInvoice(req, res);
@@ -18,8 +20,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 }
 
 async function getInvoice(req: VercelRequest, res: VercelResponse) {
-  const { invoiceId } = req.query;
+  const { invoiceId, orderId, customerEmail } = req.query;
+  const bookingToken = req.headers['x-booking-token'];
   if (!invoiceId) return res.status(400).json({ success: false, error: 'invoiceId query param required' });
+  if (!orderId || !customerEmail || !verifyBookingToken(bookingToken, {
+    orderId: String(orderId),
+    customerEmail: String(customerEmail),
+  })) {
+    return res.status(401).json({ success: false, error: 'Invalid booking token' });
+  }
 
   try {
     const result = await createSquareClient().invoices.get({ invoiceId: invoiceId as string });
@@ -32,7 +41,7 @@ async function getInvoice(req: VercelRequest, res: VercelResponse) {
 }
 
 async function createInvoice(req: VercelRequest, res: VercelResponse) {
-  const { orderId, customerEmail, depositCents, dueDate } = req.body || {};
+  const { orderId, customerEmail, depositCents, dueDate, bookingToken } = req.body || {};
   const normalizedOrderId = typeof orderId === 'string' ? orderId.trim() : '';
   const normalizedEmail = typeof customerEmail === 'string' ? customerEmail.trim().toLowerCase() : '';
   const normalizedDepositCents = Math.round(Number(depositCents) || 0);
@@ -48,6 +57,13 @@ async function createInvoice(req: VercelRequest, res: VercelResponse) {
   }
   if (normalizedDepositCents <= 0) {
     return res.status(400).json({ success: false, error: 'depositCents must be greater than zero' });
+  }
+  if (!verifyBookingToken(bookingToken, {
+    orderId: normalizedOrderId,
+    customerEmail: normalizedEmail,
+    depositCents: normalizedDepositCents,
+  })) {
+    return res.status(401).json({ success: false, error: 'Invalid booking token' });
   }
 
   const locationId = getSquareLocationId();

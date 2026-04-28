@@ -5,10 +5,14 @@
 Square is the source of truth for menu/catalog data, pricing, packages, add-ons, signature dishes, deposit settings, customers, orders, invoices, and payments.
 
 - Keep `SQUARE_ACCESS_TOKEN` server-side in Vercel environment variables only.
+- Keep `BOOKING_TOKEN_SECRET` server-side in Vercel environment variables only.
 - Use `VITE_SQUARE_APPLICATION_ID`, `VITE_SQUARE_LOCATION_ID`, and `VITE_SQUARE_ENVIRONMENT` in the browser; these are public Web Payments SDK values.
 - Set `SQUARE_ENVIRONMENT=production` and `VITE_SQUARE_ENVIRONMENT=production` for the live site.
 - Card data must stay inside Square Web Payments SDK. This app should only receive Square payment tokens.
 - Menu changes should be made in Square Dashboard. The site fetches `/api/square/menu` without caching so Square catalog edits are reflected on fresh page loads.
+- Invoice and payment actions require a signed booking token created by the server when the Square order is created.
+- Public lead, quote, order, invoice, and payment routes have basic per-IP rate limiting.
+- For heavier traffic or adversarial traffic, add provider-level bot protection or a shared rate-limit store because serverless in-memory limits are best-effort per runtime instance.
 - Use `POST /api/square/seed` and `POST /api/square/cleanup` only with the admin token and only when intentionally changing Square catalog structure.
 
 ## Contentful

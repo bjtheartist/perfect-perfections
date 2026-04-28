@@ -93,6 +93,7 @@ export interface BookingRequest {
 export interface BookingResponse {
   bookingId: string;
   orderId: string;
+  bookingToken: string;
   invoiceId?: string;
   status: 'pending' | 'confirmed' | 'cancelled';
   totalCents: number;
@@ -123,6 +124,7 @@ export interface PaymentRequest {
   sourceId: string; // Token from Web Payments SDK
   amountCents: number;
   orderId: string;
+  bookingToken: string;
   customerEmail: string;
   note?: string;
 }

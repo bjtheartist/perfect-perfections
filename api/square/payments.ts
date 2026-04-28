@@ -8,12 +8,14 @@ import {
   handleCors,
   requireMethods,
 } from '../_lib/square.js';
+import { rateLimit, verifyBookingToken } from '../_lib/security.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (handleCors(req, res, ['POST'])) return;
   if (!requireMethods(req, res, ['POST'])) return;
+  if (rateLimit(req, res, { name: 'square-payments', limit: 10, windowMs: 10 * 60 * 1000 })) return;
 
-  const { sourceId, amountCents, orderId, customerEmail, note } = req.body || {};
+  const { sourceId, amountCents, orderId, customerEmail, note, bookingToken } = req.body || {};
   const normalizedSourceId = typeof sourceId === 'string' ? sourceId.trim() : '';
   const normalizedOrderId = typeof orderId === 'string' ? orderId.trim() : '';
   const normalizedAmountCents = Math.round(Number(amountCents) || 0);
@@ -28,6 +30,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (normalizedAmountCents <= 0) {
     return res.status(400).json({ success: false, error: 'amountCents must be greater than zero' });
+  }
+  if (!verifyBookingToken(bookingToken, {
+    orderId: normalizedOrderId,
+    customerEmail: normalizedCustomerEmail,
+  })) {
+    return res.status(401).json({ success: false, error: 'Invalid booking token' });
   }
 
   try {

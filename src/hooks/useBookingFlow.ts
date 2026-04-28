@@ -28,6 +28,7 @@ export const useBookingFlow = (catalog: CatalogData) => {
   // Square integration state
   const [squareQuote, setSquareQuote] = useState<SquareQuote | null>(null);
   const [squareOrderId, setSquareOrderId] = useState<string | null>(null);
+  const [squareBookingToken, setSquareBookingToken] = useState<string | null>(null);
   const [squareInvoiceId, setSquareInvoiceId] = useState<string | null>(null);
   const [squareInvoiceUrl, setSquareInvoiceUrl] = useState<string | null>(null);
   const [squareReceiptUrl, setSquareReceiptUrl] = useState<string | null>(null);
@@ -55,7 +56,18 @@ export const useBookingFlow = (catalog: CatalogData) => {
   const total = fallbackQuote.totalCents / 100;
   const deposit = fallbackQuote.depositCents / 100;
 
-  const open = (bookingMode: BookingMode = 'book') => { setIsOpen(true); setMode(bookingMode); setStep('package'); setSquareError(null); };
+  const open = (bookingMode: BookingMode = 'book') => {
+    setIsOpen(true);
+    setMode(bookingMode);
+    setStep('package');
+    setSquareQuote(null);
+    setSquareOrderId(null);
+    setSquareBookingToken(null);
+    setSquareInvoiceId(null);
+    setSquareInvoiceUrl(null);
+    setSquareReceiptUrl(null);
+    setSquareError(null);
+  };
   const close = () => setIsOpen(false);
   const toggleAddon = (id: string) => setAddons(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   const toggleMenuItem = (id: string) => {
@@ -77,10 +89,10 @@ export const useBookingFlow = (catalog: CatalogData) => {
   return {
     isOpen, mode, step, selectedPackage, guests, eventType, eventDate, eventTime, addons, notes, pkg, total, deposit,
     customerName, customerEmail, customerPhone,
-    squareQuote, fallbackQuote, squareOrderId, squareInvoiceId, squareInvoiceUrl, squareReceiptUrl, squareLoading, squareError,
+    squareQuote, fallbackQuote, squareOrderId, squareBookingToken, squareInvoiceId, squareInvoiceUrl, squareReceiptUrl, squareLoading, squareError,
     selectedMenuItems, menuItemSizes, setMode, setStep, setSelectedPackage, setGuests, setEventType, setEventDate, setEventTime, setNotes, toggleAddon, toggleMenuItem, setMenuItemSize,
     setCustomerName, setCustomerEmail, setCustomerPhone,
-    setSquareQuote, setSquareOrderId, setSquareInvoiceId, setSquareInvoiceUrl, setSquareReceiptUrl, setSquareLoading, setSquareError,
+    setSquareQuote, setSquareOrderId, setSquareBookingToken, setSquareInvoiceId, setSquareInvoiceUrl, setSquareReceiptUrl, setSquareLoading, setSquareError,
     buildBookingRequest,
     open, close,
   };

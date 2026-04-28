@@ -101,11 +101,11 @@ export function useSquare() {
 
   /** Create and send an invoice with deposit */
   const createInvoice = useCallback(
-    (orderId: string, customerEmail: string, depositCents: number, dueDate?: string) => {
+    (orderId: string, customerEmail: string, depositCents: number, bookingToken: string, dueDate?: string) => {
       return withLoading(() =>
         apiFetch<{ invoiceId: string; publicUrl: string }>('/square/invoices', {
           method: 'POST',
-          body: JSON.stringify({ orderId, customerEmail, depositCents, dueDate }),
+          body: JSON.stringify({ orderId, customerEmail, depositCents, bookingToken, dueDate }),
         })
       );
     },
@@ -114,10 +114,12 @@ export function useSquare() {
 
   /** Check invoice status */
   const checkInvoiceStatus = useCallback(
-    (invoiceId: string) => {
+    (invoiceId: string, orderId: string, customerEmail: string, bookingToken: string) => {
+      const params = new URLSearchParams({ invoiceId, orderId, customerEmail });
       return withLoading(() =>
         apiFetch<{ invoiceId: string; status: string; publicUrl?: string }>(
-          `/square/invoices?invoiceId=${encodeURIComponent(invoiceId)}`
+          `/square/invoices?${params.toString()}`,
+          { headers: { 'x-booking-token': bookingToken } }
         )
       );
     },

@@ -117,19 +117,24 @@ export const BookingModal = ({
     try {
       // Create the order in Square
       const orderResult = await square.createOrder(flow.buildBookingRequest());
-      if (orderResult.success && orderResult.data) {
-        flow.setSquareOrderId(orderResult.data.orderId);
+      if (!orderResult.success || !orderResult.data) {
+        flow.setSquareError(orderResult.error || 'Failed to create order');
+        return;
+      }
 
-        // Create and send invoice with deposit
-        const invoiceResult = await square.createInvoice(
-          orderResult.data.orderId,
-          flow.customerEmail,
-          orderResult.data.depositCents,
-        );
-        if (invoiceResult.success && invoiceResult.data) {
-          flow.setSquareInvoiceId(invoiceResult.data.invoiceId);
-          flow.setSquareInvoiceUrl(invoiceResult.data.publicUrl);
-        }
+      flow.setSquareOrderId(orderResult.data.orderId);
+      flow.setSquareBookingToken(orderResult.data.bookingToken);
+
+      // Create and send invoice with deposit
+      const invoiceResult = await square.createInvoice(
+        orderResult.data.orderId,
+        flow.customerEmail,
+        orderResult.data.depositCents,
+        orderResult.data.bookingToken,
+      );
+      if (invoiceResult.success && invoiceResult.data) {
+        flow.setSquareInvoiceId(invoiceResult.data.invoiceId);
+        flow.setSquareInvoiceUrl(invoiceResult.data.publicUrl);
       }
       flow.setStep('deposit');
     } catch (err: any) {
@@ -141,9 +146,14 @@ export const BookingModal = ({
 
   // Handle deposit completion with soft invoice status check
   const handleCompleteDeposit = async () => {
-    if (squareEnabled && flow.squareInvoiceId) {
+    if (squareEnabled && flow.squareInvoiceId && flow.squareOrderId && flow.squareBookingToken) {
       try {
-        const result = await square.checkInvoiceStatus(flow.squareInvoiceId);
+        const result = await square.checkInvoiceStatus(
+          flow.squareInvoiceId,
+          flow.squareOrderId,
+          flow.customerEmail,
+          flow.squareBookingToken,
+        );
         if (result.success && result.data?.status === 'PAID') {
           flow.setStep('confirmed');
           return;
@@ -650,6 +660,7 @@ export const BookingModal = ({
                               sourceId: token,
                               amountCents: Math.round(depositAmount * 100),
                               orderId: flow.squareOrderId || '',
+                              bookingToken: flow.squareBookingToken || '',
                               customerEmail: flow.customerEmail,
                               note: `Deposit for ${flow.eventType} on ${flow.eventDate}`,
                             });
@@ -685,7 +696,7 @@ export const BookingModal = ({
                     onClick={handleCompleteDeposit}
                     className="w-full text-zinc-500 py-3 text-sm hover:text-black transition-colors"
                   >
-                    I'll pay later → Continue to Confirmation
+                    Request manual follow-up instead
                   </button>
                 </div>
               ) : (
@@ -702,11 +713,14 @@ export const BookingModal = ({
                           try {
                             // Create order first if we don't have one
                             let orderId = flow.squareOrderId;
+                            let bookingToken = flow.squareBookingToken;
                             if (!orderId) {
                               const orderResult = await square.createOrder(flow.buildBookingRequest());
                               if (orderResult.success && orderResult.data) {
                                 orderId = orderResult.data.orderId;
+                                bookingToken = orderResult.data.bookingToken;
                                 flow.setSquareOrderId(orderId);
+                                flow.setSquareBookingToken(bookingToken);
                               } else {
                                 flow.setSquareError(orderResult.error || 'Failed to create order');
                                 return;
@@ -717,6 +731,7 @@ export const BookingModal = ({
                               sourceId: token,
                               amountCents: Math.round(depositAmount * 100),
                               orderId: orderId || '',
+                              bookingToken: bookingToken || '',
                               customerEmail: flow.customerEmail,
                               note: `Deposit for ${flow.eventType} on ${flow.eventDate}`,
                             });
@@ -752,7 +767,7 @@ export const BookingModal = ({
                     onClick={handleCompleteDeposit}
                     className="w-full text-zinc-500 py-3 text-sm hover:text-black transition-colors"
                   >
-                    Skip payment → Continue to Confirmation
+                    Request manual follow-up instead
                   </button>
                 </div>
               )}
@@ -773,9 +788,11 @@ export const BookingModal = ({
               <div className="space-y-2">
                 <h3 className="text-3xl font-bold">You're Booked!</h3>
                 <p className="text-zinc-500">
-                  {flow.squareOrderId
-                    ? <>Invoice sent to <strong>{flow.customerEmail}</strong>. Nikida will confirm within 24 hours.</>
-                    : <>Deposit of ${depositAmount.toLocaleString()} received. Nikida will reach out within 24 hours to finalize your menu.</>
+                  {flow.squareReceiptUrl
+                    ? <>Deposit of ${depositAmount.toLocaleString()} received. Nikida will reach out within 24 hours to finalize your menu.</>
+                    : flow.squareInvoiceUrl
+                      ? <>Invoice sent to <strong>{flow.customerEmail}</strong>. Your date is pending until the deposit is paid and confirmed.</>
+                      : <>Your request was sent for manual follow-up. Nikida will reach out within 24 hours to finalize payment and availability.</>
                   }
                 </p>
               </div>

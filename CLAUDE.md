@@ -62,6 +62,7 @@ Access admin dashboard at `/?admin=true` — prompts for `ADMIN_SECRET` token (s
 - `SQUARE_LOCATION_ID` — Square location
 - `SQUARE_ENVIRONMENT` — `sandbox` or `production`
 - `ADMIN_SECRET` — Protects admin endpoints
+- `BOOKING_TOKEN_SECRET` — Signs booking tokens for invoice and payment follow-up calls
 - `GMAIL_USER` — Gmail user for lead notification email (optional)
 - `GMAIL_APP_PASSWORD` — Gmail app password for lead notification email (optional)
 - `NOTIFY_EMAIL` — Recipient for lead notification email (optional)

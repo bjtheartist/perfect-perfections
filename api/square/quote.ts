@@ -8,10 +8,12 @@ import {
   requireMethods,
   validateQuoteRequest,
 } from '../_lib/square.js';
+import { rateLimit } from '../_lib/security.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (handleCors(req, res, ['POST'])) return;
   if (!requireMethods(req, res, ['POST'])) return;
+  if (rateLimit(req, res, { name: 'square-quote', limit: 30, windowMs: 10 * 60 * 1000 })) return;
 
   const booking = normalizeBooking(req.body);
   const validationError = validateQuoteRequest(booking);

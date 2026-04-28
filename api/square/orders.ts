@@ -13,10 +13,12 @@ import {
   upsertCustomer,
   validateOrderRequest,
 } from '../_lib/square.js';
+import { createBookingToken, rateLimit } from '../_lib/security.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (handleCors(req, res, ['POST'])) return;
   if (!requireMethods(req, res, ['POST'])) return;
+  if (rateLimit(req, res, { name: 'square-orders', limit: 12, windowMs: 10 * 60 * 1000 })) return;
 
   const booking = normalizeBooking(req.body);
   const validationError = validateOrderRequest(booking);
@@ -76,12 +78,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const order = orderResult.order;
     const totalCents = Number(order?.totalMoney?.amount ?? 0);
     const depositCents = Math.round(totalCents * (catalog.depositRate ?? 0.50));
+    const orderId = order?.id || '';
 
     res.json({
       success: true,
       data: {
-        bookingId: order?.id || '',
-        orderId: order?.id || '',
+        bookingId: orderId,
+        orderId,
+        bookingToken: createBookingToken({
+          orderId,
+          customerEmail: booking.customerEmail,
+          totalCents,
+          depositCents,
+        }),
         status: 'pending',
         totalCents,
         depositCents,

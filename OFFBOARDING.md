@@ -43,6 +43,7 @@ Required Square variables:
 Required admin variable:
 
 - [ ] `ADMIN_SECRET`
+- [ ] `BOOKING_TOKEN_SECRET`
 
 Optional Contentful variables:
 
@@ -119,6 +120,8 @@ Optional lead notification variables:
 - [ ] Admin orders, transactions, and customers tabs load.
 - [ ] `/api/square/health` returns `success: true` in production.
 - [ ] `/api/square/menu` returns live Square catalog data in production.
+- [ ] Public quote, order, invoice, payment, and lead routes have basic rate limiting enabled.
+- [ ] Invoice/payment actions require the signed booking token returned by order creation.
 - [ ] SEO metadata, `robots.txt`, and `sitemap.xml` use the correct production domain.
 - [ ] Favicon, logo, menu PDF, and gallery assets load.
 
@@ -141,6 +144,8 @@ Notes:
 - The app falls back to static catalog/content when Square or Contentful are not configured.
 - Contentful controls non-menu site content only; Square controls the live menu/catalog.
 - `/api/square/menu` and the frontend catalog fetch are configured with no-cache behavior so Square catalog updates are pulled on fresh loads.
+- Public lead, quote, order, invoice, and payment routes use per-IP rate limiting.
+- Invoice and payment calls require a signed booking token created with the Square order.
 - API routes are under `api/`; there is no active Express server in the current checkout.
 - Confirm the 50% deposit policy and 10.25% tax policy with the client before final launch.
 - `npm audit` is currently clean. `package.json` uses npm `overrides` to keep patched transitive versions under `@vercel/node`.

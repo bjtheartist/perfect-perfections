@@ -37,6 +37,7 @@ Do not deploy this repo to GitHub Pages. GitHub Pages can only host the built fr
 Deploy it to Vercel or another platform that supports serverless Node API routes, and make sure the runtime has:
 
 - `ADMIN_SECRET`
+- `BOOKING_TOKEN_SECRET`
 - `SQUARE_ACCESS_TOKEN`
 - `SQUARE_LOCATION_ID`
 - `SQUARE_ENVIRONMENT`

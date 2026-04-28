@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { SquareClient, SquareEnvironment } from 'square';
 import nodemailer from 'nodemailer';
 import { setCorsOrigin } from '../_lib/square.js';
+import { rateLimit } from '../_lib/security.js';
 
 function getClient() {
   return new SquareClient({
@@ -18,7 +19,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-admin-token');
   if (req.method === 'OPTIONS') return res.status(204).end();
 
-  if (req.method === 'POST') return createLead(req, res);
+  if (req.method === 'POST') {
+    if (rateLimit(req, res, { name: 'leads-create', limit: 8, windowMs: 10 * 60 * 1000 })) return;
+    return createLead(req, res);
+  }
   if (req.method === 'GET') return listLeads(req, res);
   res.status(405).json({ error: 'Method not allowed' });
 }
